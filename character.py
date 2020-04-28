@@ -17,6 +17,7 @@ SKILLS = [
     'Pers',
     'Rel',
     'Sle',
+    'Ste',
     'Sur'
 ]
 
@@ -37,6 +38,7 @@ SKILL_NAMES = [
     'Persuasion',
     'Religion',
     'Sleight of Hand',
+    'Stealth',
     'Survival'
 ]
 
