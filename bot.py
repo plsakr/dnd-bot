@@ -1,12 +1,14 @@
-import discord
 import random
-from d20 import roll, RollResult, AdvType
 import urllib.request
-import bot_spreadsheet
-import message_formatter
-import main.character_manager as cm
+
+import discord
+from d20 import AdvType, RollResult, roll
 from pymongo import MongoClient
-from main.initiative import Initiative, Combatant
+
+import bot_spreadsheet
+import main.character_manager as cm
+import message_formatter
+from main.initiative import Combatant, Initiative
 
 TOKEN = 'NzAxODQxMjE1MzA5NzQyMTIw.Xp3Www.aeQE74SSNa_J0yzcN-FgAmcYfn8'
 
@@ -273,4 +275,3 @@ print("Loading all saved data!")
 cm.load_data()
 client = MyClient()
 client.run(TOKEN)
-
