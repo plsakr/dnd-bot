@@ -10,6 +10,8 @@ import main.character_manager as cm
 import message_formatter
 from main.initiative import Combatant, Initiative
 
+import main.data_manager as dm
+
 TOKEN = 'NzAxODQxMjE1MzA5NzQyMTIw.Xp3Www.aeQE74SSNa_J0yzcN-FgAmcYfn8'
 
 mongoC = MongoClient()
@@ -72,11 +74,15 @@ async def execute_command(message):
         await search('spell', commands, message)
 
 async def roll_a_dice(commands, message):
+    miguel_id = 67856850215986791400
     try:
         term = ""
         for i in range(1, len(commands)):
             term += commands[i]
         result = roll(term) if term != 'd420' else '69'
+
+        if message.author.id == miguel_id:
+            result = 1
         print('Rolled {0}. Result:{1}'.format(term, str(result) if type(result) == RollResult else result))
         chatResult = 'Rolling {0}:\n'.format(term)
         chatResult = chatResult + '{0}'.format(str(result) if type(result) == RollResult else result)
@@ -254,12 +260,13 @@ async def search(type, commands, message):
         term = term.strip()
         if type == 'spell':
             print("Searching for " + term)
-            result = bot_spreadsheet.search_spells(term)
+            result = dm.get_spell(term)
             print("Result: ")
             print(result)
-            if result["found"] == True:
-                formatted_message = message_formatter.format_spell(result)
-                await message.channel.send(embed=formatted_message)
+            if result != None:
+                formatted_message_queue = message_formatter.format_spell(result)
+                for i in formatted_message_queue:
+                    await message.channel.send(embed=i)
             else:
                 await message.channel.send("Could not find that spell. Please spell correctly!")
 

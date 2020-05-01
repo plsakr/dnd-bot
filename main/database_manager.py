@@ -35,3 +35,18 @@ def exists_character_id(id):
     global db
     chars = db.chars
     return chars.find_one({"_id":id}) != None
+
+def add_spell(spell):
+    global db
+    spells = db.spells
+    return spells.replace_one({"_id":spell["_id"]}, spell, upsert=True)
+
+def retrieve_spell(name):
+    global db
+    spells = db.spells
+    return spells.find_one({"_id":name})
+
+def exists_spell(name):
+    global db
+    spells = db.spells
+    return spells.find_one({"_id":name}) != None
