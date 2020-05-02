@@ -1,5 +1,5 @@
 import main.database_manager as db
-import bot_spreadsheet as bs
+import main.bot_spreadsheet as bs
 
 
 def get_spell(name):

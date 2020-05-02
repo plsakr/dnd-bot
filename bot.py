@@ -5,9 +5,9 @@ import discord
 from d20 import AdvType, RollResult, roll
 from pymongo import MongoClient
 
-import bot_spreadsheet
+import main.bot_spreadsheet as bs
 import main.character_manager as cm
-import message_formatter
+import main.message_formatter as mf
 from main.initiative import Combatant, Initiative
 
 import main.data_manager as dm
@@ -23,7 +23,7 @@ SEARCH_TYPES = ['spell']
 
 class MyClient(discord.Client):
     async def on_ready(self):
-        bot_spreadsheet.init()
+        bs.init()
         print('Logged on as {0}'.format(self.user))
 
     async def on_message(self, message):
@@ -53,7 +53,7 @@ async def execute_command(message):
         # cha['_id'] = message.author.id
         # db.chars.replace_one({'_id': cha['_id']}, cha, upsert=True)
         if status == cm.STATUS_OK:
-            x, char = cm.get_active_char(message.author.id)
+            _, char = cm.get_active_char(message.author.id)
             await message.channel.send('Imported ' + char['PCName'])
         elif status == cm.STATUS_ERR_CHAR_EXISTS:
             await message.channel.send('A Character has already been imported from that url. If you need to update it, use `?chupdate` instead!')
@@ -224,7 +224,7 @@ async def initiative(commands, message):
                 if cached_combat.dungeon_master != message.author:
                     await message.channel.send('Only the DM can edit NPC HP!')
                 else:
-                    current = cached_combat.next()
+                    current = cached_combat.next() # pylint: disable=not-callable
                     await cached_combat.cached_summary.edit(content = cached_combat.get_full_text())
                     await message.channel.send("{0}{1} its your turn in initiative!".format(current.mention if current.mention != None else "", current.name))
                     
@@ -264,11 +264,11 @@ async def search(type, commands, message):
             print("Result: ")
             print(result)
             if result != None:
-                formatted_message_queue = message_formatter.format_spell(result)
+                formatted_message_queue = mf.format_spell(result)
                 for i in formatted_message_queue:
                     await message.channel.send(embed=i)
-            else:
-                await message.channel.send("Could not find that spell. Please spell correctly!")
+        else:
+            await message.channel.send("Could not find that spell. Please spell correctly!")
 
 
 

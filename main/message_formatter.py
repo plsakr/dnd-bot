@@ -5,7 +5,7 @@ def format_spell(search_result):
 
     embed = []
     if search["level"] == "#N/A":
-        embed[0] = discord.Embed(title=search["_id"], description="I'm sorry but everyone was too lazy to add spell data to the database")
+        embed.append(discord.Embed(title=search["_id"], description="I'm sorry but everyone was too lazy to add spell data to the database"))
     else:
         name = search['_id']
         level = search['level']

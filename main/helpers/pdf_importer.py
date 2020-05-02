@@ -2,7 +2,6 @@
 
 from collections import OrderedDict
 from PyPDF2 import PdfFileWriter, PdfFileReader
-import simplejson as json
 
 from pdfminer.pdfparser import PDFParser
 from pdfminer.pdfdocument import PDFDocument
@@ -83,7 +82,7 @@ def get_form_in_dict(file_name):
             if type(value) ==  bytes:
                 value = value.decode('UTF-8')
         except:
-            hi = None
+            pass
         out[name] = value
         keys.append(name)
     # print(out)
