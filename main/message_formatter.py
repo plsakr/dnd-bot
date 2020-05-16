@@ -19,10 +19,9 @@ def format_spell(search_result):
         ref = search['ref']
         desc = ""
         if level == '0':
-            desc += "cantrip "
+            desc += school + " cantrip "
         else:
-            desc += "level " + level + " "
-        desc += school
+            desc += "level " + level + " " + school
 
         color = 0xffffff
 

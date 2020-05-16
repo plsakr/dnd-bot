@@ -137,8 +137,10 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-tests/*
-temp/*
+tests
+temp
+
+*.xfdf
 
 .Python
 [Bb]in
@@ -150,3 +152,4 @@ temp/*
 pyvenv.cfg
 .venv
 pip-selfcheck.json
+.idea
