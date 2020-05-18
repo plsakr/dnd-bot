@@ -1,5 +1,15 @@
 import main.database_manager as db
 import main.bot_spreadsheet as bs
+import json
+
+BOT_TOKEN = ""
+GOOGLE_JSON_FILE = ""
+
+def init_global_data():
+    global BOT_TOKEN
+    with open("SECRETS.txt") as data_file:
+        data = json.load(data_file)
+        BOT_TOKEN = data['bot_token']
 
 
 def get_spell(name):

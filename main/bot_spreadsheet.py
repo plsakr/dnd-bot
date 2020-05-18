@@ -6,7 +6,7 @@ scopes = ['https://spreadsheets.google.com/feeds',
 
 DB_SS_URL = 'https://docs.google.com/spreadsheets/d/19mHfL2nXJFRYNVXjgDnDhfb4Zpq8z1YIV1zC1-4kCAI/edit#gid=194376210'
 
-credentials = Credentials.from_service_account_file('DnD Bot-6c26153fbace.json', scopes=scopes)
+credentials = Credentials.from_service_account_file('google_sa_key.json', scopes=scopes)
 gc = None
 doc = None
 

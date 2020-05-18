@@ -153,3 +153,5 @@ pyvenv.cfg
 .venv
 pip-selfcheck.json
 .idea
+/SECRETS.txt
+/google_sa_key.json

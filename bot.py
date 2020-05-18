@@ -10,7 +10,7 @@ from main.initiative import Combatant, Initiative
 
 import main.data_manager as dm
 
-TOKEN = 'NzAxODQxMjE1MzA5NzQyMTIw.Xp3Www.aeQE74SSNa_J0yzcN-FgAmcYfn8'
+dm.init_global_data()
 
 mongoC = MongoClient()
 db = mongoC.ddb_db
@@ -273,4 +273,4 @@ async def search(type, arg, ctx):
 
 print("Loading all saved data!")
 cm.load_data()
-bot.run(TOKEN)
+bot.run(dm.BOT_TOKEN)
