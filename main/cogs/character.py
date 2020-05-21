@@ -1,5 +1,7 @@
 from discord.ext import commands
 import main.character_manager as cm
+import main.message_formatter as mf
+import main.helpers.reply_holder as rh
 from d20 import AdvType
 
 
@@ -37,6 +39,42 @@ class Character(commands.Cog):
             await ctx.send(
                 'A Character has already been imported from that url. If you need to update it, use `?chupdate` '
                 'instead!')
+
+    @commands.command()
+    async def chars(self, ctx, *arg):
+        status, active_char = cm.get_active_char(ctx.author.id)
+        if status == cm.STATUS_ERR:
+            await ctx.send("Could not retrieve your characters. Have you imported any yet?")
+            return
+        characters = cm.get_player_characters_list(ctx.author.id)
+        msg_text = mf.format_characters(characters, ctx.author, active_char['_id'])
+        await ctx.send(msg_text)
+
+    @commands.command()
+    async def switch(self, ctx, *args):
+        characters = cm.get_player_characters_list(ctx.author.id)
+        if len(characters) < 2:
+            await ctx.send("You have less than 2 imported characters. Use `?chars` to list your characters")
+            return
+        _, active_char = cm.get_active_char(ctx.author.id)
+        msg_text = mf.format_characters(characters, ctx.author, active_char['_id'], choosing=True)
+        await ctx.send(msg_text)
+
+        async def on_reply(reply):
+            try:
+                index = int(reply) - 1
+                new_id = characters[index]['id']
+                char = characters[index]
+                success_msg = "{0} set your active character to: {1}".format(ctx.author.mention, char['name'])
+                if cm.switch_active_character(ctx.author.id, new_id):
+                    await ctx.send(success_msg)
+            except ValueError:
+                await ctx.send("Please input a number. Switching Canceled. Use `?switch` again")
+
+        rep = rh.ReplyHolder(ctx.author.id, on_reply)
+        rh.replies.append(rep)
+
+
 
     @commands.command(aliases=['ch'])
     async def check(self, ctx, *arg):

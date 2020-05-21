@@ -13,6 +13,14 @@ class Search(commands.Cog):
     async def spell(self, ctx, *, arg):
         await search('spell', arg, ctx)
 
+    @commands.command()
+    async def item(self, ctx, *, arg):
+        await search('item', arg, ctx)
+
+    @commands.command()
+    async def monster(self, ctx, *, arg):
+        await search('monster', arg, ctx)
+
 
 async def search(search_type, arg, ctx):
     if search_type in SEARCH_TYPES:

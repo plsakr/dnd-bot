@@ -132,7 +132,7 @@ def import_from_drive_id(id, user_id):
         players[0]['user']['chars'].append({'id':id, 'name':character['PCName']})
         players[0]['user']['active_char']={'id':id, 'name':character['PCName']}
         players[0]['char'] = character
-        db.upsert_user(players[0])
+        db.upsert_user(players[0]['user'])
     else:
         user = {
             "_id":user_id,
@@ -150,6 +150,25 @@ def import_from_drive_id(id, user_id):
     return STATUS_OK
     # print(player)
 
+
+def switch_active_character(user_id, to_char_id):
+    global active_players_and_characters
+    player = list(filter(lambda x: x['user']['_id'] == user_id, active_players_and_characters))[0]
+    index = active_players_and_characters.index(player)
+    if len(list(filter(lambda x: x['id'] == to_char_id, player['user']['chars']))) > 0:
+        character = db.retrieve_char(to_char_id)
+        player['user']['active_char'] = {'id': character['_id'], 'name': character['PCName']}
+        player['char'] = character
+        db.upsert_user(player['user'])
+        active_players_and_characters[index] = player
+        return True
+    else:
+        return False
+
+
+def get_player_characters_list(user_id):
+    user = db.retrieve_or_create_user(user_id)
+    return user['chars']
 
 def get_active_char(user_id):
     global active_players_and_characters

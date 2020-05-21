@@ -3,7 +3,7 @@ from pydrive.drive import GoogleDrive
 
 gauth = GoogleAuth()
 scope = ['https://www.googleapis.com/auth/drive']
-gauth.credentials = ServiceAccountCredentials.from_json_keyfile_name('DnD Bot-6c26153fbace.json', scope)
+gauth.credentials = ServiceAccountCredentials.from_json_keyfile_name('google_sa_key.json', scope)
 drive = GoogleDrive(gauth)
 
 

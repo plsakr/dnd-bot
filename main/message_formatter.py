@@ -1,11 +1,13 @@
 import discord
 
+
 def format_spell(search_result):
     search = search_result
 
     embed = []
     if search["level"] == "#N/A":
-        embed.append(discord.Embed(title=search["_id"], description="I'm sorry but everyone was too lazy to add spell data to the database"))
+        embed.append(discord.Embed(title=search["_id"],
+                                   description="I'm sorry but everyone was too lazy to add spell data to the database"))
     else:
         name = search['_id']
         level = search['level']
@@ -43,7 +45,6 @@ def format_spell(search_result):
         if is_ritual == "Yes":
             cast_time += " (ritual)"
 
-
         embed.append(discord.Embed(title=name, description=desc, color=color))
         embed[0].add_field(name="Casting time", value=cast_time, inline=True)
         embed[0].add_field(name="Range", value=rng, inline=True)
@@ -62,5 +63,20 @@ def format_spell(search_result):
                 embed.append(temp_embed)
 
         footer = "Reference: " + ref
-        embed[len(embed)-1].set_footer(text=footer)
+        embed[len(embed) - 1].set_footer(text=footer)
     return embed
+
+
+def format_characters(character_list, author, active_id, choosing=False):
+    output = ""
+    if not choosing:
+        output = "{0}'s imported characters:\n".format(author.mention)
+    else:
+        output = "{0} Reply with a number to switch characters:\n".format(author.mention)
+    index = 1
+
+    for char in character_list:
+        output += "{0}. {1}\t{2}\n".format(index, char['name'], ":white_check_mark:" if char['id'] == active_id else "")
+        index += 1
+
+    return output
