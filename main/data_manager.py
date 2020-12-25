@@ -4,12 +4,39 @@ import json
 
 BOT_TOKEN = ""
 GOOGLE_JSON_FILE = ""
+MONGO_CONNECTION = ""
 
-def init_global_data():
+def init_global_data(is_test):
     global BOT_TOKEN
+    global MONGO_CONNECTION
     with open("SECRETS.txt") as data_file:
         data = json.load(data_file)
-        BOT_TOKEN = data['bot_token']
+        if not is_test:
+            BOT_TOKEN = data['bot_token']
+        else:
+            BOT_TOKEN = data['test_token']
+        MONGO_CONNECTION = data['mongo_connection']
+    db.init_db_connection(MONGO_CONNECTION)
+
+
+def get_all_users():
+    return db.get_all_users()
+
+
+def retrieve_char(query):
+    return db.retrieve_char(query)
+
+
+def exists_char_id(id):
+    return db.exists_character_id(id)
+
+
+def upsert_user(user):
+    return db.upsert_user(user)
+
+
+def upsert_character(character):
+    return db.upsert_character(character)
 
 
 def get_spell(name):

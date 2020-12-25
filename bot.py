@@ -1,25 +1,25 @@
 import discord.ext.commands as commands
 from d20 import RollResult
 from d20 import roll as d20_roll
-from pymongo import MongoClient
 
 import main.bot_spreadsheet as bs
 import main.character_manager as cm
 
 import main.data_manager as dm
 import main.helpers.reply_holder as rh
+import sys
 
-dm.init_global_data()
-
-mongoC = MongoClient()
-db = mongoC.ddb_db
+if len(sys.argv) == 0:
+    dm.init_global_data(False)
+else:
+    dm.init_global_data(sys.argv[0])
+from pymongo import MongoClient
 
 
 class DnDBot(commands.Bot):
     def __init__(self, prefix, description=None, **options):
         super(DnDBot, self).__init__(prefix, description=description, **options)
         self.cached_combat = None
-        self.database = db
 
 
 bot = DnDBot('?')

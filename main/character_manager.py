@@ -2,8 +2,9 @@
 import main.helpers.pdf_downloader as pdf_downloader
 import main.helpers.pdf_importer as pdf_importer
 import os
-import main.database_manager as db
+# import main.database_manager as db
 from d20 import roll, AdvType
+import main.data_manager as data
 
 TEMP_FOLDER_NAME = "temp"
 SKILLS = [
@@ -62,9 +63,9 @@ active_players_and_characters = []
 
 def load_data():
     global active_players_and_characters
-    users = db.get_all_users()
+    users = data.get_all_users()
     for user in users:
-        player = {'user':user, 'char':db.retrieve_char(user['active_char']['id'])}
+        player = {'user':user, 'char':data.retrieve_char(user['active_char']['id'])}
         active_players_and_characters.append(player)
 
 def roll_check(user_id, check, adv = AdvType.NONE):
@@ -108,7 +109,7 @@ def roll_save(user_id, check, adv = AdvType.NONE):
         return (STATUS_INVALID_INPUT, None)
 
 def import_from_drive_id(id, user_id):
-    if db.exists_character_id(id):
+    if data.exists_character_id(id):
         return STATUS_ERR_CHAR_EXISTS
 
     global active_players_and_characters
@@ -132,7 +133,7 @@ def import_from_drive_id(id, user_id):
         players[0]['user']['chars'].append({'id':id, 'name':character['PCName']})
         players[0]['user']['active_char']={'id':id, 'name':character['PCName']}
         players[0]['char'] = character
-        db.upsert_user(players[0]['user'])
+        data.upsert_user(players[0]['user'])
     else:
         user = {
             "_id":user_id,
@@ -144,9 +145,9 @@ def import_from_drive_id(id, user_id):
             'char':character
         }
         active_players_and_characters.append(player)
-        db.upsert_user(user)
+        data.upsert_user(user)
 
-    db.upsert_character(character)
+    data.upsert_character(character)
     return STATUS_OK
     # print(player)
 
@@ -156,10 +157,10 @@ def switch_active_character(user_id, to_char_id):
     player = list(filter(lambda x: x['user']['_id'] == user_id, active_players_and_characters))[0]
     index = active_players_and_characters.index(player)
     if len(list(filter(lambda x: x['id'] == to_char_id, player['user']['chars']))) > 0:
-        character = db.retrieve_char(to_char_id)
+        character = data.retrieve_char(to_char_id)
         player['user']['active_char'] = {'id': character['_id'], 'name': character['PCName']}
         player['char'] = character
-        db.upsert_user(player['user'])
+        data.upsert_user(player['user'])
         active_players_and_characters[index] = player
         return True
     else:
@@ -167,7 +168,7 @@ def switch_active_character(user_id, to_char_id):
 
 
 def get_player_characters_list(user_id):
-    user = db.retrieve_or_create_user(user_id)
+    user = data.retrieve_or_create_user(user_id)
     return user['chars']
 
 def get_active_char(user_id):

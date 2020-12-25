@@ -8,7 +8,38 @@ class Character:
         self.race = None  # The race of the player
         self.background = None  # The player's background
         self.rolled_hp = 0
-        self.rolled_abilities = []
+        self.rolled_abilities = {"cha": 0, "con": 0, "dex": 0,
+                                 "int": 0, "str": 0, "wis": 0}
+
+    def get_ability(self, ability_name):
+        pass
+
+    def get_proficiency(self, skill_name):
+        pass
+
+    def get_ability_mod(self, ability_name):
+        pass
+
+    def get_skill_mod(self, skill_name):
+        pass
+
+    def get_weapon_profs(self):
+        res = []
+        for i in self.classes:
+            res.extend(i.weapon_profs)
+        return res
+
+    def get_armor_profs(self):
+        res = []
+        for i in self.classes:
+            res.extend(i.armor_profs)
+        return res
+
+    def get_tool_profs(self):
+        res = []
+        for i in self.classes:
+            res.extend(i.tool_profs)
+        return res
 
         # TODO: The rest of the attributes like equipment, and spells!
 
