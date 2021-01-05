@@ -9,10 +9,10 @@ import main.data_manager as dm
 import main.helpers.reply_holder as rh
 import sys
 
-if len(sys.argv) == 0:
+if len(sys.argv) == 1:
     dm.init_global_data(False)
 else:
-    dm.init_global_data(sys.argv[0])
+    dm.init_global_data(sys.argv[1])
 
 
 class DnDBot(commands.Bot):
