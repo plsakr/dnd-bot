@@ -234,3 +234,12 @@ def get_active_char(user_id):
 
     return (STATUS_OK, players[0]['char'])
 
+
+def update_character_hp(char, mod):
+    char['HP'] += mod
+    if char['HP'] < 0:
+        char['HP'] = 0
+    if char['HP'] > char['HPMax']:
+        char['HP'] = char['HPMax']
+
+    data.upsert_character(char)

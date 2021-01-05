@@ -13,6 +13,9 @@ class Initiative:
         self.players.append(combatant)
         self.sort_initiative()
 
+    def check_char_exists(self, name):
+        return len(list(filter(lambda x: x.name == name, self.players))) == 1
+
     def remove_char(self, name):
         self.players.remove(list(filter(lambda x: x.name == name, self.players))[0])
 

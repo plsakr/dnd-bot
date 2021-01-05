@@ -115,18 +115,14 @@ class Character(commands.Cog):
     async def hp(self, ctx, *args):
         status, cha = cm.get_active_char(ctx.author.id)
         if status == cm.STATUS_ERR:
-            ctx.send("3mol ma3roof import a character first thanks!")
+            ctx.send("3mol ma3roof import a character first. mK? thanks!")
         else:
             if len(args) == 0:
                 await ctx.send('{0}: {1}/{2}'.format(cha['name'], cha['HP'], cha['HPMax']))
             else:
                 mod = int(args[0])
-                cha['HP'] += mod
-                if cha['HP'] < 0:
-                    cha['HP'] = 0
-                if cha['HP'] > cha['HPMax']:
-                    cha['HP'] = cha['HPMax']
-                self.bot.database.chars.replace_one({'_id': cha['_id']}, cha, upsert=True)
+                cm.update_character_hp(cha, mod)
+
                 if self.bot.cached_combat is None:
                     await ctx.send('{0}: {1}/{2}'.format(cha['name'], cha['HP'], cha['HPMax']))
                 else:

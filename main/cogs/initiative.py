@@ -13,29 +13,30 @@ class Init(commands.Cog):
     async def init(self, ctx):
         """
         """
-        await ctx.send("Invalid usage!")
+        # await ctx.send("Invalid usage!")
+
+        if ctx.invoked_subcommand is not None:
+            return
+
+        if self.bot.cached_combat is not None:
+            summary = self.bot.cached_combat.get_full_text()
+            await ctx.send(summary)
 
     @init.command()
-    async def begin(self, ctx, arg):
-        if arg != "":
-            await ctx.send("No arguments allowed!")
-            return
+    async def begin(self, ctx):
         if self.bot.cached_combat is not None:
             await ctx.send('Please end combat using `?i end` first!')
         else:  # STARTING COMBAT
             print('Oh boy starting combat!!')
             self.bot.cached_combat = Initiative()
-            self.bot.cached_combatcached_combat.dungeon_master = ctx.author
-            summary = self.bot.cached_combatcached_combat.get_full_text()
+            self.bot.cached_combat.dungeon_master = ctx.author
+            summary = self.bot.cached_combat.get_full_text()
             await ctx.send('Your DM has begun Combat! Join by typing `?i join`')
             self.bot.cached_combat.cached_summary = await ctx.send(summary)
             await self.bot.cached_combat.cached_summary.pin()
 
     @init.command()
-    async def end(self, ctx, arg):
-        if arg != "":
-            await ctx.send("No arguments allowed!")
-            return
+    async def end(self, ctx):
         if self.bot.cached_combat is None:
             await ctx.send('Combat has not started!')
         else:
@@ -47,7 +48,7 @@ class Init(commands.Cog):
                 await ctx.send("Combat has ended. ~~Here's to the next TPK~~ :beers:")
 
     @init.command()
-    async def join(self, ctx, arg):
+    async def join(self, ctx):
         if self.bot.cached_combat is None:
             await ctx.send('Combat has not started!')
         else:  # Check if player has a player!
@@ -56,7 +57,7 @@ class Init(commands.Cog):
                 await ctx.send("You haven't imported a character!")
             else:
                 i = await roll_initiative(ctx, cha)
-                cbt = Combatant(cha['PCName'], i, ctx.author.mention, cha['HPMax'], cha['HP'])
+                cbt = Combatant(cha['name'], i, ctx.author.mention, cha['HPMax'], cha['HP'])
                 print("ADDED A COMBATANT YA LATIF {0}".format(cbt))
                 self.bot.cached_combat.add_char(cbt)
                 await self.bot.cached_combat.cached_summary.edit(content=self.bot.cached_combat.get_full_text())
@@ -79,6 +80,23 @@ class Init(commands.Cog):
                     self.bot.cached_combat.add_char(cbt)
                     await self.bot.cached_combat.cached_summary.edit(content=self.bot.cached_combat.get_full_text())
 
+    @init.command(aliases=['r'])
+    async def remove(self, ctx, arg):
+        if self.bot.cached_combat is None:
+            await ctx.send('Combat has not started!!')
+        else:
+            if self.bot.cached_combat.dungeon_master != ctx.author:
+                await ctx.send('Only the DM can add non player characters to combat!')
+            else:
+                await ctx.message.delete()
+
+                if self.bot.cached_combat.check_char_exists(arg):
+                    self.bot.cached_combat.remove_char(arg)
+                    await ctx.send('Removed {0} from initiative'.format(arg))
+                else:
+                    await ctx.send('Could not find that combatant in initiative. Please type the whole name (if spaces use "")')
+                await self.bot.cached_combat.cached_summary.edit(content=self.bot.cached_combat.get_full_text())
+
     @init.command(aliases=['hp'])
     async def health(self, ctx, *args):
         if self.bot.cached_combat is None:
@@ -98,12 +116,12 @@ class Init(commands.Cog):
                     await ctx.message.delete()
 
     @init.command()
-    async def next(self, ctx, *args):
+    async def next(self, ctx):
         if self.bot.cached_combat is None:
             await ctx.send('Combat has not started!')
         else:
             if self.bot.cached_combat.dungeon_master != ctx.author:
-                await ctx.send('Only the DM can edit NPC HP!')
+                await ctx.send('Only the DM can use that command!')
             else:
                 current = self.bot.cached_combat.next()  # pylint: disable=not-callable
                 await self.bot.cached_combat.cached_summary.edit(content=self.bot.cached_combat.get_full_text())
@@ -113,7 +131,7 @@ class Init(commands.Cog):
 
 async def roll_initiative(ctx, cha=None, initBonus=None, private=False):
     try:
-        result = d20_roll("1d20+{0}".format(cha['InitBonus'] if cha != None else initBonus))
+        result = d20_roll("1d20+{0}".format(cha['init'] if cha != None else initBonus))
         print('Rolled for initiative. Result:{0}'.format(result.total))
         chatResult = '{0} Rolling for Initiative:\n'.format(ctx.author.mention)
         chatResult = chatResult + '{0}'.format(str(result))
