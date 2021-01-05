@@ -39,6 +39,14 @@ def upsert_character(character):
     return db.upsert_character(character)
 
 
+def create_character(character):
+    return db.create_character(character)
+
+
+def retrieve_or_create_user(id):
+    return db.retrieve_or_create_user(id)
+
+
 def get_spell(name):
     if db.exists_spell(name):
         return db.retrieve_spell(name)

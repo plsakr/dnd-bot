@@ -1,4 +1,4 @@
-from pymongo import MongoClient
+from pymongo import MongoClient, collection
 import time
 
 
@@ -62,6 +62,14 @@ def upsert_character(character):
     global db
     chars = db.chars
     chars.replace_one({"_id": character["_id"]}, character, upsert=True)
+
+
+@measure_time
+def create_character(character):
+    global db
+    chars: collection = db.chars
+    x = chars.insert_one(character)
+    return x.inserted_id
 
 
 @measure_time

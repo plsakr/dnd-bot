@@ -22,23 +22,32 @@ class Character(commands.Cog):
             await ctx.send('Not a valid check!')
 
     @commands.command()
-    async def chimport(self, ctx, arg):
-        url = arg
-        char_id = url.split("id=")[1]
-        await ctx.send(
-            "Importing character. Please wait ~~a while because miguel wants me to import from a pdf directly~~ :p")
-        print("Importing from id: " + char_id)
-        status = cm.import_from_drive_id(char_id, ctx.author.id)
+    async def chimport(self, ctx):
+        # url = arg
+        # char_id = url.split("id=")[1]
+
+        # print("Importing from id: " + char_id)
+        # status = cm.import_from_drive_id(char_id, ctx.author.id)
+
+        if hasattr(ctx.message, 'attachments') and len(ctx.message.attachments) == 1:
+            await ctx.send("Importing character. Please wait while I download your character :p")
+            pdf_bytes = await ctx.message.attachments[0].read()
+            status = cm.import_from_pdf(pdf_bytes, ctx.author.id)
+            if status == cm.STATUS_OK:
+                _, char = cm.get_active_char(ctx.author.id)
+                await ctx.send('Imported ' + char['name'])
+        else:
+            await ctx.send('You need to upload your printed PDF')
         # cha = character.import_character_from_json((await message.attachments[0].read()).decode('utf-8'))
         # cha['_id'] = message.author.id
         # db.chars.replace_one({'_id': cha['_id']}, cha, upsert=True)
-        if status == cm.STATUS_OK:
-            _, char = cm.get_active_char(ctx.author.id)
-            await ctx.send('Imported ' + char['PCName'])
-        elif status == cm.STATUS_ERR_CHAR_EXISTS:
-            await ctx.send(
-                'A Character has already been imported from that url. If you need to update it, use `?chupdate` '
-                'instead!')
+        # if status == cm.STATUS_OK:
+        #     _, char = cm.get_active_char(ctx.author.id)
+        #     await ctx.send('Imported ' + char['PCName'])
+        # elif status == cm.STATUS_ERR_CHAR_EXISTS:
+        #     await ctx.send(
+        #         'A Character has already been imported from that url. If you need to update it, use `?chupdate` '
+        #         'instead!')
 
     @commands.command()
     async def chars(self, ctx, *arg):
@@ -75,7 +84,6 @@ class Character(commands.Cog):
         rh.replies.append(rep)
 
 
-
     @commands.command(aliases=['ch'])
     async def check(self, ctx, *arg):
         adv = AdvType.NONE
@@ -84,6 +92,9 @@ class Character(commands.Cog):
                 adv = AdvType.ADV
             elif 'dis' in arg[1].lower():
                 adv = AdvType.DIS
+        elif len(arg) == 0:
+            await ctx.send('Please input a valid check!')
+            return
 
         status, result = cm.roll_check(ctx.author.id, arg[0], adv)
         await self.send_result(status, result, ctx)
@@ -97,7 +108,7 @@ class Character(commands.Cog):
             elif 'dis' in args[1].lower():
                 adv = AdvType.DIS
 
-        status, result = cm.roll_save(ctx.author.id, args[1], adv)
+        status, result = cm.roll_save(ctx.author.id, args[0], adv)
         await self.send_result(status, result, ctx)
 
     @commands.command()
@@ -107,7 +118,7 @@ class Character(commands.Cog):
             ctx.send("3mol ma3roof import a character first thanks!")
         else:
             if len(args) == 0:
-                await ctx.send('{0}: {1}/{2}'.format(cha['PCName'], cha['HP'], cha['HPMax']))
+                await ctx.send('{0}: {1}/{2}'.format(cha['name'], cha['HP'], cha['HPMax']))
             else:
                 mod = int(args[0])
                 cha['HP'] += mod
@@ -117,9 +128,9 @@ class Character(commands.Cog):
                     cha['HP'] = cha['HPMax']
                 self.bot.database.chars.replace_one({'_id': cha['_id']}, cha, upsert=True)
                 if self.bot.cached_combat is None:
-                    await ctx.send('{0}: {1}/{2}'.format(cha['PCName'], cha['HP'], cha['HPMax']))
+                    await ctx.send('{0}: {1}/{2}'.format(cha['name'], cha['HP'], cha['HPMax']))
                 else:
-                    cbt = self.bot.cached_combat.get_combatant_from_name(cha['PCName'])
+                    cbt = self.bot.cached_combat.get_combatant_from_name(cha['name'])
                     cbt.modify_health(mod)
                     await ctx.send(cbt.get_summary())
                     await self.bot.cached_combat.cached_summary.edit(content=self.bot.cached_combat.get_full_text())

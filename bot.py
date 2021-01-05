@@ -13,7 +13,6 @@ if len(sys.argv) == 0:
     dm.init_global_data(False)
 else:
     dm.init_global_data(sys.argv[0])
-from pymongo import MongoClient
 
 
 class DnDBot(commands.Bot):
@@ -57,8 +56,6 @@ async def roll(ctx, *, arg):
             term += arg[i]
         result = d20_roll(term) if term != 'd420' else '69'
 
-        # if ctx.author.id == miguel_id:
-        #     result = 1
         print('Rolled {0}. Result:{1}'.format(term, str(result) if type(result) == RollResult else result))
         chatResult = 'Rolling {0}:\n'.format(term)
         chatResult = chatResult + '{0}'.format(str(result) if type(result) == RollResult else result)
