@@ -1,4 +1,5 @@
 from discord.ext import commands
+from discord import channel
 from main.initiative import Initiative, Combatant
 from d20 import roll as d20_roll
 
@@ -73,7 +74,8 @@ class Init(commands.Cog):
                 if len(args) < 2:
                     print('NOT ENOUGH OPERANDS!')
                 else:
-                    await ctx.message.delete()
+                    if not isinstance(ctx.channel, channel.DMChannel):
+                        await ctx.message.delete()
                     i = await roll_initiative(ctx, None, args[1], True)
                     cbt = Combatant(args[0], i, None, int(args[2]) if 0 <= 2 < len(args) else None, None, private=True)
                     print("ADDED A COMBATANT YA LATIF {0}".format(cbt))
