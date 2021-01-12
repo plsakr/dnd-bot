@@ -1,5 +1,5 @@
 import discord.ext.commands as commands
-from d20 import RollResult
+from d20 import RollResult, AdvType
 from d20 import roll as d20_roll
 
 import main.bot_spreadsheet as bs
@@ -50,14 +50,21 @@ async def on_message(message):
 @bot.command(aliases=['r'])
 async def roll(ctx, *, arg):
     arg = arg.split(' ')
+    adv = AdvType.NONE  # 0 -> none, -1 -> dis, 1 -> adv
     try:
         term = ""
         for i in range(0, len(arg)):
-            term += arg[i]
-        result = d20_roll(term) if term != 'd420' else '69'
+            if arg[i] not in ['adv', 'dis']:
+                term += arg[i]
+            elif arg[i] == 'adv':
+                adv = AdvType.ADV
+            elif arg[i] == 'dis':
+                adv = AdvType.DIS
+
+        result = d20_roll(term, advantage=adv) if term != 'd420' else '69'
 
         print('Rolled {0}. Result:{1}'.format(term, str(result) if type(result) == RollResult else result))
-        chatResult = 'Rolling {0}:\n'.format(term)
+        chatResult = 'Rolling {0} for {1}:\n'.format(term, ctx.author.mention)
         chatResult = chatResult + '{0}'.format(str(result) if type(result) == RollResult else result)
         await ctx.send(chatResult)
     except:
