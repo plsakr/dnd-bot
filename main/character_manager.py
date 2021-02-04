@@ -211,7 +211,7 @@ def switch_active_character(user_id, to_char_id):
     index = active_players_and_characters.index(player)
     if len(list(filter(lambda x: x['id'] == to_char_id, player['user']['chars']))) > 0:
         character = data.retrieve_char(to_char_id)
-        player['user']['active_char'] = {'id': character['_id'], 'name': character['PCName']}
+        player['user']['active_char'] = {'id': character['_id'], 'name': character['name']}
         player['char'] = character
         data.upsert_user(player['user'])
         active_players_and_characters[index] = player

@@ -23,11 +23,6 @@ class Character(commands.Cog):
 
     @commands.command()
     async def chimport(self, ctx):
-        # url = arg
-        # char_id = url.split("id=")[1]
-
-        # print("Importing from id: " + char_id)
-        # status = cm.import_from_drive_id(char_id, ctx.author.id)
 
         if hasattr(ctx.message, 'attachments') and len(ctx.message.attachments) == 1:
             await ctx.send("Importing character. Please wait while I download your character :p")
@@ -38,16 +33,7 @@ class Character(commands.Cog):
                 await ctx.send('Imported ' + char['name'])
         else:
             await ctx.send('You need to upload your printed PDF')
-        # cha = character.import_character_from_json((await message.attachments[0].read()).decode('utf-8'))
-        # cha['_id'] = message.author.id
-        # db.chars.replace_one({'_id': cha['_id']}, cha, upsert=True)
-        # if status == cm.STATUS_OK:
-        #     _, char = cm.get_active_char(ctx.author.id)
-        #     await ctx.send('Imported ' + char['PCName'])
-        # elif status == cm.STATUS_ERR_CHAR_EXISTS:
-        #     await ctx.send(
-        #         'A Character has already been imported from that url. If you need to update it, use `?chupdate` '
-        #         'instead!')
+
 
     @commands.command()
     async def chars(self, ctx, *arg):
