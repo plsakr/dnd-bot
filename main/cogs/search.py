@@ -2,7 +2,7 @@ from discord.ext import commands
 import main.data_manager as dm
 import main.message_formatter as mf
 
-SEARCH_TYPES = ['spell']
+SEARCH_TYPES = ['spell', 'monster']
 
 
 class Search(commands.Cog):
@@ -36,6 +36,17 @@ async def search(search_type, arg, ctx):
                     await ctx.send(embed=i)
             else:
                 await ctx.send("Could not find that spell. Please spell correctly!")
+        elif search_type == 'monster':
+            print("Searching for " + term)
+            result = dm.get_monster(term)
+            print("Result: ")
+            if result is not None:
+                message_queue = mf.format_monster(ctx, result)
+                for i in message_queue:
+                    await ctx.send(embed=i)
+            else:
+                await ctx.send("Could not find that monster. Please spell correctly!")
+
     else:
         await ctx.send("That search has not been implemented yet. SORRY!")
 

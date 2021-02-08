@@ -16,8 +16,14 @@ class Initiative:
     def check_char_exists(self, name):
         return len(list(filter(lambda x: x.name == name, self.players))) == 1
 
-    def remove_char(self, name):
-        self.players.remove(list(filter(lambda x: x.name == name, self.players))[0])
+    def remove_char(self, combatant):
+        index = self.players.index(combatant)
+
+        # make sure the initiative index is correct!
+        if index < self.current_init_index:
+            self.current_init_index -= 1
+
+        self.players.remove(combatant)
 
     def sort_initiative(self):
         self.players = sorted(self.players, key= lambda x: x.init, reverse=True)
@@ -38,6 +44,7 @@ class Initiative:
         return (list(filter(lambda x: x.name == name, self.players))[0])
 
     def next(self):
+        self.players[self.current_init_index].current_turn = False
         self.current_init_index += 1
         
         if self.current_init_index >= len(self.players):
@@ -45,7 +52,8 @@ class Initiative:
 
         if self.current_init_index == 0:
             self.battle_round += 1
-        
+
+        self.players[self.current_init_index].current_turn = True
         return self.players[self.current_init_index]
 
     def start_initiative(self):
@@ -61,6 +69,7 @@ class Combatant:
         self.init = init
         self.max_hp = max_hp
         self.mention = mention
+        self.current_turn = False
         if max_hp != None:
             self.current_hp = current_hp if current_hp != None else max_hp
         else:

@@ -93,8 +93,14 @@ class Init(commands.Cog):
                 await ctx.message.delete()
 
                 if self.bot.cached_combat.check_char_exists(arg):
-                    self.bot.cached_combat.remove_char(arg)
-                    await ctx.send('Removed {0} from initiative'.format(arg))
+
+                    # if it is their turn, DO NOT ALLOW REMOVAL!
+                    combatant = self.bot.cached_combat.get_combatant_from_name(arg)
+                    if combatant.current_turn:
+                        await ctx.send('Cannot remove combatant on their turn!')
+                    else:
+                        self.bot.cached_combat.remove_char(arg)
+                        await ctx.send('Removed {0} from initiative'.format(arg))
                 else:
                     await ctx.send('Could not find that combatant in initiative. Please type the whole name (if spaces use "")')
                 await self.bot.cached_combat.cached_summary.edit(content=self.bot.cached_combat.get_full_text())

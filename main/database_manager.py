@@ -1,4 +1,4 @@
-from pymongo import MongoClient, collection
+from pymongo import MongoClient, collection, ASCENDING
 import time
 
 
@@ -98,3 +98,32 @@ def exists_spell(name):
     global db
     spells = db.spells
     return spells.find_one({"_id": name}) != None
+
+
+@measure_time
+def insert_monster(monster):
+    global db
+    monsters = db.monsters
+    monsters.create_index([('name', ASCENDING)], unique=True)
+    return monsters.insert_one(monster)
+
+
+@measure_time
+def insert_many_monsters(monster_objs):
+    global db
+    monsters = db.monsters
+    monsters.create_index([('name', ASCENDING)])
+    return monsters.insert_many(monster_objs)
+
+
+@measure_time
+def does_monster_exist(name):
+    global db
+    monsters = db.monsters
+    return monsters.find({'name': name}).limit(1).count() == 1
+
+@measure_time
+def retrieve_monster(name):
+    global db
+    monsters = db.monsters
+    return monsters.find_one({"name": name})

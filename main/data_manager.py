@@ -6,7 +6,9 @@ BOT_TOKEN = ""
 GOOGLE_JSON_FILE = ""
 MONGO_CONNECTION = ""
 
+
 def init_global_data(is_test):
+    print('beginning data initialization')
     global BOT_TOKEN
     global MONGO_CONNECTION
     with open("SECRETS.txt") as data_file:
@@ -17,6 +19,7 @@ def init_global_data(is_test):
             BOT_TOKEN = data['test_token']
         MONGO_CONNECTION = data['mongo_connection']
     db.init_db_connection(MONGO_CONNECTION)
+    _init_monster_data()
 
 
 def get_all_users():
@@ -60,6 +63,12 @@ def get_spell(name):
         else:
             return None
 
+def get_monster(name):
+    if db.does_monster_exist(name):
+        return db.retrieve_monster(name)
+    else:
+        return None
+
 
 def __parse_result(spell_result):
     spell_result = spell_result['value']
@@ -77,3 +86,14 @@ def __parse_result(spell_result):
 
     return spell
 
+
+def _init_monster_data():
+    print('initializing monster data')
+    with open('./data/monsters/mm.json') as f:
+        data = json.load(f)
+        f.close()
+    all_monsters = data['monster']
+
+    if not db.does_monster_exist(all_monsters[0]['name']):
+        db.insert_many_monsters(all_monsters)
+        print('inserted ' + str(len(all_monsters)) + ' monsters')
