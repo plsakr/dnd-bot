@@ -175,7 +175,7 @@ def format_monster(ctx, monster):
         for l in monster['languages']:
             lng += l + ', '
         lng = lng[:-2]
-    cr = monster['cr']
+    cr = monster['cr'] if isinstance(monster['cr'], str) else monster['cr']['cr']
 
     traits = ''
 
