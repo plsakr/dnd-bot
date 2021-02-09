@@ -161,6 +161,7 @@ def import_from_pdf(pdf_bytes, user_id):
         result = result.replace('\n\x0c', '')
         result = result.replace('°', '')
         result = result.replace('| ', '')
+        result = result.replace('=I', '-1')
         if not key == 'name':
             result = int(result)
         character[key] = result
