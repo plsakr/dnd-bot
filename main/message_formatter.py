@@ -84,6 +84,16 @@ def format_characters(character_list, author, active_id, choosing=False):
     return output
 
 
+def format_monster_choices(name_list, author):
+    output = "{0} I found multiple matches. Please type the number that matches your result:\n".format(author.mention)
+    index = 1
+    for n in name_list:
+        output += "{0}. {1}\n".format(index, n)
+        index += 1
+    output += "Or, send c to cancel search."
+    return output
+
+
 def format_monster(ctx, monster):
     name = monster['name']
     mytype = monster['type'] if isinstance(monster['type'], str) else monster['type']['type']

@@ -1,4 +1,5 @@
 from pymongo import MongoClient, collection, ASCENDING
+from bson.son import SON
 import time
 
 
@@ -8,8 +9,8 @@ def measure_time(f):
         result = f(*args, **kw)
         te = time.time()
 
-        print('%r (%r, %r) %2.2f sec' % \
-              (f.__name__, args, kw, te - ts))
+        print('%r took %2.2f sec' % \
+              (f.__name__, te - ts))
         return result
 
     return timed
@@ -109,11 +110,20 @@ def insert_monster(monster):
 
 
 @measure_time
-def insert_many_monsters(monster_objs):
+def insert_many_monsters(monster_objs, monster_grams):
     global db
     monsters = db.monsters
-    monsters.create_index([('name', ASCENDING)])
-    return monsters.insert_many(monster_objs)
+    mon_grams = db.monster_grams
+    monster_ids = monsters.insert_many(monster_objs)
+    gram_objs = []
+
+    labels = ['ref', 'grams']
+    for id, gram in zip(monster_ids.inserted_ids, monster_grams):
+        gram_objs.append(dict(zip(labels, [id, gram])))
+
+    mon_grams.insert_many(gram_objs)
+    mon_grams.create_index([('grams', ASCENDING)])
+    return monster_ids.inserted_ids
 
 
 @measure_time
@@ -122,8 +132,55 @@ def does_monster_exist(name):
     monsters = db.monsters
     return monsters.find({'name': name}).limit(1).count() == 1
 
+
+@measure_time
+def does_monster_exist_id(bid):
+    global db
+    monsters = db.monsters
+    return monsters.find({'_id': bid}).limit(1).count() == 1
+
+
 @measure_time
 def retrieve_monster(name):
     global db
     monsters = db.monsters
     return monsters.find_one({"name": name})
+
+
+@measure_time
+def retrieve_monster_id(bId):
+    global db
+    monsters = db.monsters
+    return monsters.find_one({"_id": bId})
+
+
+def retrieve_monster_name(bId):
+    global db
+    monsters = db.monsters
+    return monsters.find_one({"_id": bId}, {'name': 1})['name']
+
+def query_monster_grams(query):
+    global db
+    monster_grams: collection = db.monster_grams
+    result = monster_grams.aggregate(
+        [{'$match': {'grams': {'$in': query}}}, {'$project': {'ref': 1, 'grams': 1, 'score': {
+            '$round': [
+                {
+                    '$divide': [
+                        {
+                            '$size': {
+                                '$filter': {
+                                    'input': "$grams",
+                                    'cond': {
+                                        '$in': ["$$this", query]
+                                    }
+                                }
+                            }
+                        }, {
+                            '$size': "$grams"
+                        }
+                    ]
+                }
+                , 2]
+        }}}, {'$sort': SON([('score', -1)])}, {'$limit': 10}])
+    return list(result)

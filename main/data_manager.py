@@ -1,6 +1,7 @@
 import main.database_manager as db
 import main.bot_spreadsheet as bs
 import json
+from main.cogs.search import create_grams
 
 BOT_TOKEN = ""
 GOOGLE_JSON_FILE = ""
@@ -63,11 +64,29 @@ def get_spell(name):
         else:
             return None
 
+
 def get_monster(name):
     if db.does_monster_exist(name):
         return db.retrieve_monster(name)
     else:
         return None
+
+
+def get_monster_by_id(bId):
+    if db.does_monster_exist_id(bId):
+        return db.retrieve_monster_id(bId)
+
+
+def get_monster_choices(query_grams):
+    results = db.query_monster_grams(query_grams)
+    names = []
+    if len(results) > 0:
+        ids = [r['ref'] for r in results]
+        names = [db.retrieve_monster_name(i) for i in ids]
+
+    return results, names
+
+
 
 
 def __parse_result(spell_result):
@@ -89,11 +108,16 @@ def __parse_result(spell_result):
 
 def _init_monster_data():
     print('initializing monster data')
-    with open('./data/monsters/mm.json') as f:
+    with open('./data/monsters/index.json') as f:
         data = json.load(f)
         f.close()
-    all_monsters = data['monster']
+        for filname in data['filenames']:
+            with open('./data/monsters/'+filname) as mf:
+                monster_data = json.load(mf)
+                mf.close()
+                all_monsters = monster_data['monster']
 
-    if not db.does_monster_exist(all_monsters[0]['name']):
-        db.insert_many_monsters(all_monsters)
-        print('inserted ' + str(len(all_monsters)) + ' monsters')
+            if not db.does_monster_exist(all_monsters[0]['name']):
+                grams = [create_grams(mon['name']) for mon in all_monsters]
+                db.insert_many_monsters(all_monsters, grams)
+                print('inserted ' + str(len(all_monsters)) + ' monsters')
