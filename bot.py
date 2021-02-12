@@ -7,6 +7,7 @@ import main.character_manager as cm
 
 import main.data_manager as dm
 import main.helpers.reply_holder as rh
+from main.initiative import Initiative
 import sys
 
 if len(sys.argv) == 1:
@@ -18,7 +19,7 @@ else:
 class DnDBot(commands.Bot):
     def __init__(self, prefix, description=None, **options):
         super(DnDBot, self).__init__(prefix, description=description, **options)
-        self.cached_combat = None
+        self.cached_combat = None  # type: Initiative
 
 
 bot = DnDBot('?')

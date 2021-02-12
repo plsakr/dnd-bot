@@ -1,5 +1,41 @@
+from typing import List, Any
+
+
+class Combatant:
+
+    def __init__(self, name, init, is_player, mention=None, max_hp=None, current_hp=None, private=False):
+        self.name = name
+        self.private = private
+        self.is_player = is_player
+        self.init = init
+        self.max_hp = max_hp
+        self.mention = mention
+        self.current_turn = False
+        if max_hp != None:
+            self.current_hp = current_hp if current_hp is not None else max_hp
+        else:
+            self.current_hp = None
+
+    def modify_health(self, mod):
+        self.current_hp += mod
+        if self.current_hp > self.max_hp:
+            self.current_hp = self.max_hp
+        if self.current_hp < 0:
+            self.current_hp = 0
+
+    def get_summary(self):
+        summary = "{0}: {1}".format(self.init, self.name)
+        if self.private == False and self.max_hp is not None:
+            summary += " <{0}/{1}>".format(self.current_hp, self.max_hp)
+        elif self.private == True and self.max_hp is not None:
+            summary += " <{0}>".format(
+                "Healthy" if self.current_hp >= self.max_hp / 2 else "Bloody" if 0 < self.current_hp < self.max_hp / 2 else "Dead")
+        return summary
+
 
 class Initiative:
+
+    players: List[Combatant]
 
     def __init__(self):
         self.players = []
@@ -16,6 +52,14 @@ class Initiative:
     def check_char_exists(self, name):
         return len(list(filter(lambda x: x.name == name, self.players))) == 1
 
+    def get_next_name(self, name):
+        current = 1
+        while True:
+            curr_name = name + str(current)
+            if not self.check_char_exists(curr_name):
+                return curr_name
+            current += 1
+
     def remove_char(self, combatant):
         index = self.players.index(combatant)
 
@@ -25,11 +69,25 @@ class Initiative:
 
         self.players.remove(combatant)
 
+    def attempt_char_removal(self, name: str):
+        if self.check_char_exists(name):
+
+            # if it is their turn, DO NOT ALLOW REMOVAL!
+            combatant = self.get_combatant_from_name(name)
+            if combatant.current_turn:
+                return -1 # ITS THEIR TURN
+            else:
+                self.remove_char(combatant)
+                return 0  # I DID IT!
+        else:
+            return -2  # I DONT KNOW WHO THAT IS
+
     def sort_initiative(self):
-        self.players = sorted(self.players, key= lambda x: x.init, reverse=True)
+        self.players = sorted(self.players, key=lambda x: x.init, reverse=True)
 
     def get_full_text(self):
-        outStr = "```markdown\n"+"Combat Initiative: Round {0}\n".format(self.battle_round if self.battle_round != 0 else "-")
+        outStr = "```markdown\n" + "Combat Initiative: Round {0}\n".format(
+            self.battle_round if self.battle_round != 0 else "-")
         outStr = outStr + "==============================\n"
 
         for player in self.players:
@@ -41,12 +99,12 @@ class Initiative:
         return outStr
 
     def get_combatant_from_name(self, name):
-        return (list(filter(lambda x: x.name == name, self.players))[0])
+        return list(filter(lambda x: x.name == name, self.players))[0]
 
-    def next(self):
+    def next(self) -> Combatant:
         self.players[self.current_init_index].current_turn = False
         self.current_init_index += 1
-        
+
         if self.current_init_index >= len(self.players):
             self.current_init_index = 0
 
@@ -59,34 +117,4 @@ class Initiative:
     def start_initiative(self):
         self.start_battle = True
         return self.next()
-
-
-class Combatant:
-
-    def __init__(self, name, init, mention = None, max_hp = None, current_hp = None, private = False):
-        self.name = name
-        self.private = private
-        self.init = init
-        self.max_hp = max_hp
-        self.mention = mention
-        self.current_turn = False
-        if max_hp != None:
-            self.current_hp = current_hp if current_hp != None else max_hp
-        else:
-            self.current_hp = None
-
-    def modify_health(self, mod):
-        self.current_hp += mod
-        if self.current_hp > self.max_hp:
-            self.current_hp = self.max_hp
-        if self.current_hp < 0:
-            self.current_hp = 0
-
-    def get_summary(self):
-        summary = "{0}: {1}".format(self.init, self.name)
-        if self.private == False and self.max_hp != None:
-            summary += " <{0}/{1}>".format(self.current_hp, self.max_hp)
-        elif self.private == True and self.max_hp != None:
-            summary += " <{0}>".format("Healthy" if self.current_hp >= self.max_hp/2 else "Bloody" if 0 < self.current_hp < self.max_hp/2 else "Dead")
-        return summary
 
