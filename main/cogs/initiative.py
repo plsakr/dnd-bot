@@ -196,7 +196,7 @@ class Init(commands.Cog):
                 to_remove = []
 
                 # check for dead people
-                while current.current_hp <= 0 and not current.is_player:
+                while current.current_hp is not None and current.current_hp <= 0 and not current.is_player:
                     print('I see dead people!')
                     await ctx.send('{0} is dead. Skipping their turn!'.format(current.name))
                     to_remove.append(current.name)
