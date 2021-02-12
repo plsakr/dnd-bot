@@ -31,6 +31,8 @@ class Character(commands.Cog):
             if status == cm.STATUS_OK:
                 _, char = cm.get_active_char(ctx.author.id)
                 await ctx.send('Imported ' + char['name'])
+            elif status == cm.STATUS_ERR:
+                await ctx.send('There was an error while importing the character. Check logs!')
         else:
             await ctx.send('You need to upload your printed PDF')
 

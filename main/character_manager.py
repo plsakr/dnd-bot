@@ -162,8 +162,13 @@ def import_from_pdf(pdf_bytes, user_id):
         result = result.replace('°', '')
         result = result.replace('| ', '')
         result = result.replace('=I', '-1')
-        if not key == 'name':
-            result = int(result)
+        try:
+            if not key == 'name':
+                result = result.replace('.', '')
+                result = int(result)
+        except ValueError:
+            print('!!!ERROR: Encountered an error while importing "{0}" as the {1}!!!'.format(result, key))
+            return STATUS_ERR
         character[key] = result
     character['HP'] = character['HPMax']
     player = list(filter(lambda x: x['user']['_id'] == user_id, active_players_and_characters))
