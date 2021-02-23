@@ -145,7 +145,7 @@ class Init(commands.Cog):
         return arguments
 
     @init.command(aliases=['r'])
-    async def remove(self, ctx, *arg):
+    async def remove(self, ctx, *, arg):
         if self.bot.cached_combat is None:
             await ctx.send('Combat has not started!!')
         else:

@@ -50,7 +50,7 @@ class Initiative:
         self.sort_initiative()
 
     def check_char_exists(self, name):
-        return len(list(filter(lambda x: x.name == name, self.players))) == 1
+        return len(list(filter(lambda x: x.name.lower() == name.lower(), self.players))) == 1
 
     def get_next_name(self, name):
         current = 1
