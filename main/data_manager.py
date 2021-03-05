@@ -1,6 +1,5 @@
 import main.database_manager as db
 import json
-from main.cogs.search import create_grams
 import os
 
 BOT_TOKEN = ""
@@ -126,3 +125,15 @@ def _init_monster_data():
                 grams = [create_grams(mon['name']) for mon in all_monsters]
                 db.insert_many_monsters(all_monsters, grams)
                 print('inserted ' + str(len(all_monsters)) + ' monsters')
+
+
+def create_grams(query: str, n=3):
+    actual = query.lower()
+    words = actual.split(" ")
+    out = []
+    for w in words:
+        length = len(w)
+        for i in range(0, length, n):
+            out.append(w[i:i+n])
+
+    return out

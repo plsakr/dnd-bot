@@ -40,7 +40,7 @@ async def search(search_type, arg, ctx, should_dm=False, should_send=True):
                 await ctx.send("Could not find that spell. Please spell correctly!")
         elif search_type == 'monster':
             print("Searching for " + term)
-            monster_choices, names = dm.get_monster_choices(create_grams(term.lower()))
+            monster_choices, names = dm.get_monster_choices(dm.create_grams(term.lower()))
             if len(monster_choices) == 0:
                 await ctx.send("Could not find any monsters with those search terms. Are you that illiterate?")
             else:
@@ -86,18 +86,6 @@ async def search(search_type, arg, ctx, should_dm=False, should_send=True):
 
     else:
         await ctx.send("That search has not been implemented yet. SORRY!")
-
-
-def create_grams(query: str, n=3):
-    actual = query.lower()
-    words = actual.split(" ")
-    out = []
-    for w in words:
-        length = len(w)
-        for i in range(0, length, n):
-            out.append(w[i:i+n])
-
-    return out
 
 
 def setup(bot):
