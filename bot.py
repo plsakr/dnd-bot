@@ -27,7 +27,6 @@ cogs = ['main.cogs.initiative', 'main.cogs.character', 'main.cogs.search']
 
 @bot.event
 async def on_ready():
-    bs.init()
     for cog in cogs:
         bot.load_extension(cog)
     print('Logged on as {0}'.format(bot.user))
