@@ -39,7 +39,7 @@ async def on_message(message):
     if message.author == bot.user:
         return
 
-    print('Message from {0.author}: {0.content}'.format(message))
+    # print('Message from {0.author}: {0.content}'.format(message))
     if len(rh.replies) > 0:
         for r in rh.replies:
             await r.perform_reply(message.author.id, message.content)

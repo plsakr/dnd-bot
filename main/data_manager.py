@@ -2,6 +2,7 @@ import main.database_manager as db
 import main.bot_spreadsheet as bs
 import json
 from main.cogs.search import create_grams
+import os
 
 BOT_TOKEN = ""
 GOOGLE_JSON_FILE = ""
@@ -12,13 +13,18 @@ def init_global_data(is_test):
     print('beginning data initialization')
     global BOT_TOKEN
     global MONGO_CONNECTION
-    with open("SECRETS.txt") as data_file:
-        data = json.load(data_file)
-        if not is_test:
-            BOT_TOKEN = data['bot_token']
-        else:
-            BOT_TOKEN = data['test_token']
-        MONGO_CONNECTION = data['mongo_connection']
+
+    if not is_test:
+        BOT_TOKEN = os.environ['BOT_TOKEN']
+        MONGO_CONNECTION = os.environ['MONGO_CONNECTION']
+    else:
+        with open("SECRETS.txt") as data_file:
+            data = json.load(data_file)
+            if not is_test:
+                BOT_TOKEN = data['bot_token']
+            else:
+                BOT_TOKEN = data['test_token']
+            MONGO_CONNECTION = data['mongo_connection']
     db.init_db_connection(MONGO_CONNECTION)
     _init_monster_data()
 

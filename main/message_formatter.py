@@ -1,6 +1,7 @@
 import discord
 from math import floor
 import random
+import re
 
 
 def format_spell(search_result):
@@ -92,6 +93,46 @@ def format_monster_choices(name_list, author):
         index += 1
     output += "Or, send c to cancel search."
     return output
+
+
+def reformat_dice(inString):
+    pattern = '{([^}]*)}'
+    current = inString
+    match = re.search(pattern, current)
+    index = 0
+    while match is not None and index < 30:
+        index += 1
+        start, end = match.span()
+        value = match.group()
+        value = value[1:]
+        value = value[:-1]
+
+        command = value.split(' ')[0]
+        if command == '@h':
+            current = current[0:start:] + current[end::]
+        elif command == '@atk':
+            subs = value.split(' ')[1]
+            if subs == 'mw':
+                current = current[0:start:] + '_Melee Weapon Attack:_' + current[end::]
+            elif subs == 'rw':
+                current = current[0:start:] + '_Ranged Weapon Attack:_' + current[end::]
+            else:
+                current = current[0:start:] + '_Melee or Ranged Weapon Attack:_' + current[end::]
+        elif command == '@hit':
+            current = current[0:start:] + '+' + value.split(' ')[1] + current[end::]
+        elif command == '@damage':
+            current = current[0:start:] + value.split(' ', 1)[1] + current[end::]
+        elif command == '@chance':
+            current = current[0:start:] + value.split('|')[-1] + current[end::]
+        elif command == '@dc':
+            current = current[0:start:] + '**' + value.split(' ')[1] + '**' + current[end::]
+        elif command == '@condition':
+            current = current[0:start:] + '_' + value.split(' ')[1] + '_' + current[end::]
+        elif command == '@spell':
+            current = current[0:start:] + '**' + value.split(' ', 1)[1] + '**' + current[end::]
+        match = re.search(pattern, current)
+
+    return current
 
 
 def format_monster(ctx, monster):
@@ -215,7 +256,7 @@ def format_monster(ctx, monster):
                         actions += '\n'
                         actions += '\u2022 **' + inner['name'] + ':** ' + inner['entry']
             actions += '\n\n'
-
+    actions = reformat_dice(actions)
     reactions = ''
 
     if 'reaction' in monster:
@@ -224,7 +265,7 @@ def format_monster(ctx, monster):
             for e in r['entries']:
                 reactions += e
             reactions += '\n\n'
-
+    reactions = reformat_dice(reactions)
     legendary = ''
 
     if 'legendary' in monster:
@@ -233,6 +274,7 @@ def format_monster(ctx, monster):
             for e in l['entries']:
                 legendary += e
             legendary += '\n\n'
+    legendary = reformat_dice(legendary)
 
     return get_monster_embed(ctx, name, caption, ac, hp, speed, stre, dex, con, int, wis, cha, source, snses, skills
                              , saves, lng, immune, cndImmune, vulnerable, traits, actions, legendary, cr)
@@ -288,6 +330,7 @@ def get_monster_embed(ctx, name, caption, ac, hp, speed, stre, dex, con, inte, w
 
     embeds[-1].set_footer(text=source)
     return embeds
+
 
 def chunk_text(text, max_chunk_size=1024, chunk_on=('\n\n', '\n', '. ', ' '), chunker_i=0):
     """
