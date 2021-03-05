@@ -1,5 +1,4 @@
 import main.database_manager as db
-import main.bot_spreadsheet as bs
 import json
 from main.cogs.search import create_grams
 import os
@@ -61,14 +60,14 @@ def get_spell(name):
     if db.exists_spell(name):
         return db.retrieve_spell(name)
     else:
-        spell_result = bs.search_spells(name)
-        if spell_result['found'] == True:
-            spell = __parse_result(spell_result)
-            if spell['level'] != "#N/A":
-                db.add_spell(spell)
-            return spell
-        else:
-            return None
+        # spell_result = bs.search_spells(name)
+        # if spell_result['found'] == True:
+        #     spell = __parse_result(spell_result)
+        #     if spell['level'] != "#N/A":
+        #         db.add_spell(spell)
+        #     return spell
+        # else:
+        return None
 
 
 def get_monster(name):

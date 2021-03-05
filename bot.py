@@ -2,7 +2,6 @@ import discord.ext.commands as commands
 from d20 import RollResult, AdvType
 from d20 import roll as d20_roll
 
-import main.bot_spreadsheet as bs
 import main.character_manager as cm
 
 import main.data_manager as dm
