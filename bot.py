@@ -8,6 +8,7 @@ import main.data_manager as dm
 import main.helpers.reply_holder as rh
 from main.initiative import Initiative
 import sys
+import math
 
 if len(sys.argv) == 1:
     dm.init_global_data(False)
@@ -67,6 +68,17 @@ async def roll(ctx, *, arg):
         await ctx.send(chatResult)
     except:
         await ctx.send('Invalid syntax. Check out correct syntax at: d20 library readme')
+
+@bot.command(aliases=['py'])
+async def pythagorean(ctx, *, args):
+    arg = args.split(' ')
+
+    if len(arg) < 2:
+        await ctx.send('Invalid syntax.')
+    else:
+        result = int(arg[0])**2 + int(arg[1])**2
+        result = round(math.sqrt(result),1)
+        await ctx.send('Pythagorean calculation for {0}: {1}'.format(ctx.author.mention, result))
 
 
 print("Loading all saved data!")
