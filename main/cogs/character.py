@@ -26,8 +26,8 @@ class Character(commands.Cog):
 
         if hasattr(ctx.message, 'attachments') and len(ctx.message.attachments) == 1:
             await ctx.send("Importing character. Please wait while I download your character :p")
-            pdf_bytes = await ctx.message.attachments[0].read()
-            status = cm.import_from_pdf(pdf_bytes, ctx.author.id)
+            json_bytes = await ctx.message.attachments[0].read()
+            status = cm.import_from_json(json_bytes, ctx.author.id)
             if status == cm.STATUS_OK:
                 _, char = cm.get_active_char(ctx.author.id)
                 await ctx.send('Imported ' + char['name'])
