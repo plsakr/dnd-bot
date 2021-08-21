@@ -159,6 +159,43 @@ def retrieve_monster_name(bId):
     monsters = db.monsters
     return monsters.find_one({"_id": bId}, {'name': 1})['name']
 
+
+def retrieve_guild_prefix(guild_id, default_prefix):
+    """
+    Get the Guild's set prefix, or the default if one is not set.
+    :param default_prefix: The default prefix to return if one is not set
+    :param guild_id: The id of the guild to get the command prefix for
+    :return: The prefix (as a string)
+    """
+    global db
+    settings = db.settings
+    guild_doc = settings.find_one({"guild_id": guild_id})
+    if guild_doc is not None:
+        if 'prefix' in guild_doc:
+            return guild_doc['prefix']
+        else:
+            return default_prefix
+    else:
+        return default_prefix
+
+
+def set_guild_prefix(guild_id, new_prefix):
+    """
+    Set a guild's new command prefix
+    :param guild_id: The id of the guild that will be getting the new prefix
+    :param new_prefix: The new command prefix for the guild
+    :return: None
+    """
+    global db
+    settings = db.settings
+    guild_doc = settings.find_one({"guild_id": guild_id})
+    if guild_doc is not None:
+        guild_doc['prefix'] = new_prefix
+    else:
+        guild_doc = {'guild_id': guild_id, 'prefix': new_prefix}
+    settings.replace_one({"guild_id": guild_id}, guild_doc, upsert=True)
+
+
 def query_monster_grams(query):
     global db
     monster_grams: collection = db.monster_grams

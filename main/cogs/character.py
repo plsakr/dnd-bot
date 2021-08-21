@@ -103,7 +103,7 @@ class Character(commands.Cog):
     async def hp(self, ctx, *args):
         status, cha = cm.get_active_char(ctx.author.id)
         if status == cm.STATUS_ERR:
-            ctx.send("3mol ma3roof import a character first. mK? thanks!")
+            ctx.send("please import a character first. mK? thanks!")
         else:
             if len(args) == 0:
                 await ctx.send('{0}: {1}/{2}'.format(cha['name'], cha['HP'], cha['HPMax']))
