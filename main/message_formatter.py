@@ -95,7 +95,7 @@ def format_spell(ctx, spell):
     def format_spell_duration(duration_obj):
         out = ''
         if duration_obj['type'] == 'timed':
-            out += duration_obj['duration']['amount'] + ' ' + duration_obj['duration']['type']
+            out += '{0} {1}'.format(duration_obj['duration']['amount'], duration_obj['duration']['type'])
             if 'concentration' in duration_obj:
                 out += ' (Concentration)'
         elif duration_obj['type'] == 'instant':
