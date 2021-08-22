@@ -25,6 +25,7 @@ def init_global_data(is_test):
             MONGO_CONNECTION = data['mongo_connection']
     db.init_db_connection(MONGO_CONNECTION)
     _init_monster_data()
+    _init_spell_data()
 
 
 def get_all_users():
@@ -81,8 +82,13 @@ def get_monster_by_id(bId):
         return db.retrieve_monster_id(bId)
 
 
+def get_spell_by_id(bId):
+    if db.does_spell_exist_id(bId):
+        return db.retrieve_spell_id(bId)
+
+
 def get_monster_choices(query_grams):
-    results = db.query_monster_grams(query_grams)
+    results = db.query_grams(query_grams, 'monster_grams')
     names = []
     if len(results) > 0:
         ids = [r['ref'] for r in results]
@@ -91,6 +97,14 @@ def get_monster_choices(query_grams):
     return results, names
 
 
+def get_spell_choices(query_grams):
+    results = db.query_grams(query_grams, 'spell_grams')
+    names = []
+    if len(results) > 0:
+        ids = [r['ref'] for r in results]
+        names = [db.retrieve_spell_name(i) for i in ids]
+
+    return results, names
 
 
 def __parse_result(spell_result):
@@ -115,16 +129,29 @@ def _init_monster_data():
     with open('./data/monsters/index.json') as f:
         data = json.load(f)
         f.close()
-        for filname in data['filenames']:
-            with open('./data/monsters/'+filname) as mf:
+
+        for filename in data['filenames']:
+            with open('./data/monsters/'+filename) as mf:
                 monster_data = json.load(mf)
                 mf.close()
                 all_monsters = monster_data['monster']
-
-            if not db.does_monster_exist(all_monsters[0]['name']):
                 grams = [create_grams(mon['name']) for mon in all_monsters]
                 db.insert_many_monsters(all_monsters, grams)
-                print('inserted ' + str(len(all_monsters)) + ' monsters')
+
+
+def _init_spell_data():
+    print('initializing spell data')
+    with open('./data/spells/index.json') as f:
+        data = json.load(f)
+        f.close()
+
+        for filename in data['filenames']:
+            with open('./data/spells/'+filename) as sf:
+                spell_data = json.load(sf)
+                sf.close()
+                all_spells = spell_data['spell']
+                grams = [create_grams(spell['name']) for spell in all_spells]
+                db.insert_many_spells(all_spells, grams)
 
 
 def create_grams(query: str, n=3):

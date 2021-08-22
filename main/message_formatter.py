@@ -4,71 +4,6 @@ import random
 import re
 
 
-def format_spell(search_result):
-    search = search_result
-
-    embed = []
-    if search["level"] == "#N/A":
-        embed.append(discord.Embed(title=search["_id"],
-                                   description="I'm sorry but everyone was too lazy to add spell data to the database"))
-    else:
-        name = search['_id']
-        level = search['level']
-        school = search['school']
-        cast_time = search['cast_time']
-        is_ritual = search['is_ritual']
-        duration = search['duration']
-        rng = search['rng']
-        components = search['components']
-        description = search['description']
-        ref = search['ref']
-        desc = ""
-        if level == '0':
-            desc += school + " cantrip "
-        else:
-            desc += "level " + level + " " + school
-
-        color = 0xffffff
-
-        if school == "Enchantment":
-            color = 0x00ff00
-        elif school == "Conjuration":
-            color = 0xf6ff00
-        elif school == "Divination":
-            color = 0x00fffb
-        elif school == "Necromancy":
-            color = 0x09ff00
-        elif school == "Evocation":
-            color = 0xff0000
-        elif school == "Abjuration":
-            color = 0xff8c00
-        elif school == "Transmutation":
-            color = 0x00ffb7
-
-        if is_ritual == "Yes":
-            cast_time += " (ritual)"
-
-        embed.append(discord.Embed(title=name, description=desc, color=color))
-        embed[0].add_field(name="Casting time", value=cast_time, inline=True)
-        embed[0].add_field(name="Range", value=rng, inline=True)
-        embed[0].add_field(name="Components", value=components, inline=True)
-        embed[0].add_field(name="Duration", value=duration, inline=True)
-
-        if len(description) < 1020:
-            embed[0].add_field(name="Description", value=description, inline=False)
-        else:
-            pieces = [description[:1020]] + [description[i:i + 2040] for i in range(1020, len(description), 2040)]
-            embed[0].add_field(name="Description", value=pieces[0], inline=False)
-            for piece in pieces[1:]:
-                temp_embed = discord.Embed()
-                temp_embed.colour = color
-                temp_embed.description = piece
-                embed.append(temp_embed)
-
-        footer = "Reference: " + ref
-        embed[len(embed) - 1].set_footer(text=footer)
-    return embed
-
 
 def format_characters(character_list, author, active_id, choosing=False):
     output = ""
@@ -130,9 +65,146 @@ def reformat_dice(inString):
             current = current[0:start:] + '_' + value.split(' ')[1] + '_' + current[end::]
         elif command == '@spell':
             current = current[0:start:] + '**' + value.split(' ', 1)[1] + '**' + current[end::]
+        elif command == '@dice':
+            current = current[0:start:] + value.split(' ', 1)[1] + current[end::]
         match = re.search(pattern, current)
 
     return current
+
+
+def format_spell(ctx, spell):
+
+    def format_spell_school(school):
+        if school == 'A':
+            return 'Abjuration'
+        elif school == 'C':
+            return 'Conjuration'
+        elif school == 'D':
+            return 'Divination'
+        elif school == 'E':
+            return 'Enchantment'
+        elif school == 'I':
+            return 'Illusion'
+        elif school == 'N':
+            return 'Necromancy'
+        elif school == 'T':
+            return 'Transmutation'
+        elif school == 'V':
+            return 'Evocation'
+
+    def format_spell_duration(duration_obj):
+        out = ''
+        if duration_obj['type'] == 'timed':
+            out += duration_obj['duration']['amount'] + ' ' + duration_obj['duration']['type']
+            if 'concentration' in duration_obj:
+                out += ' (Concentration)'
+        elif duration_obj['type'] == 'instant':
+            out = 'Instantaneous'
+        elif duration_obj['type'] == 'permanent':
+            out = 'Until '
+            if 'dispel' in duration_obj['ends']:
+                out += 'dispelled'
+            if 'trigger' in duration_obj['ends']:
+                out += 'or triggered'
+        else:
+            out = 'Special'
+        return out
+
+    def format_spell_components(components):
+        out = ''
+        if 'v' in components.keys():
+            out += 'V, '
+        elif 's' in components.keys():
+            out += 'S, '
+        elif 'm' in components.keys():
+            if isinstance(components['m'], str):
+                out += 'M ({0})'.format(components['m'])
+            else:
+                out += 'M ({0})'.format(components['m']['text'])
+
+        if out[-2:] == ', ':
+            out = out[:-2]
+        return out
+
+    def format_spell_range(range_obj):
+        out = ''
+        if range_obj['type'] == 'point':
+            if range_obj['distance']['type'] in ['feet', 'miles']:
+                out = '{0} {1}'.format(range_obj['distance']['amount'], range_obj['distance']['type'])
+            else:
+                out = range_obj['distance']['type'].capitalize()
+        elif range_obj['type'] in ['radius', 'cone']:
+            out = '{0} {1} radius'.format(range_obj['distance']['amount'], range_obj['distance']['type'])
+        return out
+
+    def format_spell_entries(entries):
+        out = ''
+
+        for entry in entries:
+            if isinstance(entry, str):
+                out += reformat_dice(entry) + '\n'
+            else:
+                out += entry['name'] + ' ' + format_spell_entries(entry.entries)
+        return out
+
+    embed = []
+    name = spell['name']
+    level = spell['level']
+    school = format_spell_school(spell['school'])
+    cast_time = '{0} {1}'.format(spell['time'][0]['number'],spell['time'][0]['unit'])
+    is_ritual = 'meta' in spell and spell['meta']['ritual']
+    duration = format_spell_duration(spell['duration'][0])
+
+    rng = format_spell_range(spell['range'])
+    components = format_spell_components(spell['components'])
+    description = format_spell_entries(spell['entries'])
+    ref = spell['source']
+    desc = ""
+    if level == '0':
+        desc += school + " cantrip "
+    else:
+        desc += "level {0} {1}".format(level, school)
+
+    color = 0xffffff
+
+    if school == "Enchantment":
+        color = 0x00ff00
+    elif school == "Conjuration":
+        color = 0xf6ff00
+    elif school == "Divination":
+        color = 0x00fffb
+    elif school == "Necromancy":
+        color = 0x09ff00
+    elif school == "Evocation":
+        color = 0xff0000
+    elif school == "Abjuration":
+        color = 0xff8c00
+    elif school == "Transmutation":
+        color = 0x00ffb7
+
+    if is_ritual:
+        cast_time += " (ritual)"
+
+    embed.append(discord.Embed(title=name, description=desc, color=color))
+    embed[0].add_field(name="Casting time", value=cast_time, inline=True)
+    embed[0].add_field(name="Range", value=rng, inline=True)
+    embed[0].add_field(name="Components", value=components, inline=True)
+    embed[0].add_field(name="Duration", value=duration, inline=True)
+
+    if len(description) < 1020:
+        embed[0].add_field(name="Description", value=description, inline=False)
+    else:
+        pieces = [description[:1020]] + [description[i:i + 2040] for i in range(1020, len(description), 2040)]
+        embed[0].add_field(name="Description", value=pieces[0], inline=False)
+        for piece in pieces[1:]:
+            temp_embed = discord.Embed()
+            temp_embed.colour = color
+            temp_embed.description = piece
+            embed.append(temp_embed)
+
+    footer = "Reference: " + ref
+    embed[len(embed) - 1].set_footer(text=footer)
+    return embed
 
 
 def format_monster(ctx, monster):

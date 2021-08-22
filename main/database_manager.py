@@ -1,4 +1,4 @@
-from pymongo import MongoClient, collection, ASCENDING
+from pymongo import MongoClient, collection, ASCENDING, UpdateOne
 from bson.son import SON
 import time
 
@@ -114,17 +114,31 @@ def insert_many_monsters(monster_objs, monster_grams):
     global db
     monsters = db.monsters
     mon_grams = db.monster_grams
-    monster_ids = monsters.insert_many(monster_objs)
+    return bulk_insert_with_grams(mon_grams, monster_grams, monster_objs, monsters)
+
+
+def bulk_insert_with_grams(grams_db, grams, docs, docs_db):
     gram_objs = []
-
     labels = ['ref', 'grams']
-    for id, gram in zip(monster_ids.inserted_ids, monster_grams):
-        gram_objs.append(dict(zip(labels, [id, gram])))
+    write_operations = []
+    for mon in docs:
+        write_operations.append(UpdateOne({'name': mon['name']}, {'$setOnInsert': mon}, upsert=True))
+    upsert_results = docs_db.bulk_write(write_operations)
+    for index, _id in upsert_results.upserted_ids.items():
+        gram_objs.append(dict(zip(labels, [_id, grams[index]])))
+    if len(gram_objs) > 1:
+        grams_db.insert_many(gram_objs)
+        grams_db.create_index([('grams', ASCENDING)])
+    return upsert_results.upserted_ids.values()
 
-    mon_grams.insert_many(gram_objs)
-    mon_grams.create_index([('grams', ASCENDING)])
-    return monster_ids.inserted_ids
 
+@measure_time
+def insert_many_spells(spell_objs, spell_grams):
+    global db
+    spells = db.spells
+    s_grams = db.spell_grams
+
+    return bulk_insert_with_grams(s_grams, spell_grams, spell_objs, spells)
 
 @measure_time
 def does_monster_exist(name):
@@ -141,6 +155,13 @@ def does_monster_exist_id(bid):
 
 
 @measure_time
+def does_spell_exist_id(bid):
+    global db
+    spells = db.spells
+    return spells.find({'_id': bid}).limit(1).count() == 1
+
+
+@measure_time
 def retrieve_monster(name):
     global db
     monsters = db.monsters
@@ -154,10 +175,23 @@ def retrieve_monster_id(bId):
     return monsters.find_one({"_id": bId})
 
 
+@measure_time
+def retrieve_spell_id(bId):
+    global db
+    monsters = db.spells
+    return monsters.find_one({"_id": bId})
+
+
 def retrieve_monster_name(bId):
     global db
     monsters = db.monsters
     return monsters.find_one({"_id": bId}, {'name': 1})['name']
+
+
+def retrieve_spell_name(bId):
+    global db
+    spells = db.spells
+    return spells.find_one({"_id": bId}, {'name': 1})['name']
 
 
 def retrieve_guild_prefix(guild_id, default_prefix):
@@ -196,9 +230,9 @@ def set_guild_prefix(guild_id, new_prefix):
     settings.replace_one({"guild_id": guild_id}, guild_doc, upsert=True)
 
 
-def query_monster_grams(query):
+def query_grams(query, collection_name):
     global db
-    monster_grams: collection = db.monster_grams
+    monster_grams = db[collection_name]
     result = monster_grams.aggregate(
         [{'$match': {'grams': {'$in': query}}}, {'$project': {'ref': 1, 'grams': 1, 'score': {
             '$round': [
