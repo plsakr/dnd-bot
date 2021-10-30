@@ -1,3 +1,4 @@
+import discord
 import discord.ext.commands as commands
 
 from d20 import RollResult, AdvType
@@ -28,8 +29,13 @@ class DnDBot(commands.Bot):
         super(DnDBot, self).__init__(prefix, description=description, **options)
         self.cached_combat = None  # type: Initiative
 
+def get_command_prefix(msg):
+    if msg.guild is None:
+        return ''
+    return retrieve_guild_prefix(msg.guild.id, DEFAULT_PREFIX)
 
-bot = DnDBot(lambda _, msg: retrieve_guild_prefix(msg.guild.id, DEFAULT_PREFIX))  # todo: get from Mongo
+
+bot = DnDBot(lambda _, msg: get_command_prefix(msg))  # todo: get from Mongo
 cogs = ['main.cogs.initiative', 'main.cogs.character', 'main.cogs.search']
 
 

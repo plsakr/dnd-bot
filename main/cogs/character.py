@@ -3,6 +3,7 @@ import main.character_manager as cm
 import main.message_formatter as mf
 import main.helpers.reply_holder as rh
 from d20 import AdvType
+import json
 
 
 class Character(commands.Cog):
@@ -34,7 +35,18 @@ class Character(commands.Cog):
             elif status == cm.STATUS_ERR:
                 await ctx.send('There was an error while importing the character. Check logs!')
         else:
-            await ctx.send('You need to upload your printed PDF')
+            await ctx.send('You need to upload your character file')
+
+    @commands.command()
+    async def chtest(self, ctx):
+
+        if hasattr(ctx.message, 'attachments') and len(ctx.message.attachments) == 1:
+            await ctx.send("Importing character. Please wait")
+            xml_bytes = await ctx.message.attachments[0].read()
+            data = cm.create_from_xml(xml_bytes)
+            await ctx.send("Calculated the following information:\n```json\n"+json.dumps(data, indent=4)+"\n```")
+        else:
+            await ctx.send('You need to upload your character file')
 
 
     @commands.command()

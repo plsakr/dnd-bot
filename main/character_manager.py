@@ -1,12 +1,9 @@
 ### Manages all aspecs of character importing, updating, and communication with mongo/google drive
 from d20 import roll, AdvType
 import main.data_manager as data
-from pdf2image import convert_from_bytes
-import os
 import json
-import pytesseract
-import numpy as np
-import cv2
+import xml.etree.ElementTree as ET
+
 
 TEMP_FOLDER_NAME = "temp"
 SKILLS = [
@@ -53,6 +50,48 @@ SKILL_NAMES = [
 
 MAIN_CHECKS = ['str', 'dex', 'con', 'int', 'wis', 'char']
 MAIN_NAMES = ['Strength', 'Dexterity', 'Constitution', 'Intelligence', 'Wisdom', 'Charisma']
+
+XML_FIELD_NAMES = ["PC Name", "HP Max", "AC", "Initiative bonus", "Str Mod", "Str ST Mod", "Dex Mod", "Dex ST Mod", "Con Mod",
+                   "Con ST Mod", "Int Mod", "Int ST Mod", "Wis Mod", "Wis ST Mod", "Cha Mod", "Cha ST Mod", "Acr", "Ani",
+                   "Arc", "Ath", "Dec", "His", "Ins", "Inti", "Inv Bonus", "Med", "Nat", "Perc", "Perf", "Pers", "Rel", "Sle",
+                   "Ste", "Sur"]
+
+character_data = {
+    "name": "",
+    "HPMax": 0,
+    "ac": 0,
+    "init": 0,
+    "str": 0,
+    "str_save": 0,
+    "dex": 0,
+    "dex_save": 0,
+    "con": 0,
+    "con_save": 0,
+    "int": 0,
+    "int_save": 0,
+    "wis": 0,
+    "wis_save": 0,
+    "char": -0,
+    "char_save": 0,
+    "acrobatics": 0,
+    "animal handling": 0,
+    "arcana": 0,
+    "athletics": 0,
+    "deception": -0,
+    "history": 0,
+    "insight": 0,
+    "intimidation": -0,
+    "investigation": 0,
+    "medicine": 0,
+    "nature": 0,
+    "perception": 0,
+    "performance": -0,
+    "persuasion": 0,
+    "religion": 0,
+    "sleight of hand": 0,
+    "stealth": 0,
+    "survival": 0,
+}
 
 STATUS_ERR_CHAR_EXISTS = -1
 STATUS_OK = 0
@@ -124,6 +163,32 @@ def roll_save(user_id, check, adv = AdvType.NONE):
     else:
         return (STATUS_INVALID_INPUT, None)
 
+
+def create_from_xml(xml_bytes):
+    xml_string = xml_bytes.decode("utf-8")
+    root = ET.fromstring(xml_string)
+
+    if root.tag != '{http://ns.adobe.com/xfdf/}xfdf':
+        return {}
+
+    data = character_data.copy()
+
+    data_keys = list(data.keys())
+    for i in range(0, len(data_keys)):
+        k = data_keys[i]
+        data[k] = root.find('./{http://ns.adobe.com/xfdf/}fields/{http://ns.adobe.com/xfdf/}field[@name="' + XML_FIELD_NAMES[i] + '"]/{http://ns.adobe.com/xfdf/}value').text
+
+    for k in data.keys():
+        if k != 'name':
+            try:
+                data[k] = int(data[k])
+            except ValueError:
+                return {}
+    data['HP'] = data['HPMax']
+
+    # get all known spells
+  #  spell_root = root.find('/{http://ns.adobe.com/xfdf/}fields/{http://ns.adobe.com/xfdf/}field[starts-with(@name,"P") and string-length(@name) =2]/{http://ns.adobe.com/xfdf/}field[@name="SSfront"]/{http://ns.adobe.com/xfdf/}field[@name="spells"]/{http://ns.adobe.com/xfdf/}field[@name="name"]')
+    return data
 
 def import_from_json(json_bytes, user_id):
     global active_players_and_characters

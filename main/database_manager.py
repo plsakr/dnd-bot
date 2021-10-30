@@ -23,6 +23,7 @@ db = client.ddb_db
 def init_db_connection(db_connection_string):
     global client
     global db
+    print(db_connection_string)
     client = MongoClient(db_connection_string)
     db = client.ddb_db
 
