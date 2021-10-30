@@ -53,7 +53,7 @@ MAIN_NAMES = ['Strength', 'Dexterity', 'Constitution', 'Intelligence', 'Wisdom',
 
 XML_FIELD_NAMES = ["PC Name", "HP Max", "AC", "Initiative bonus", "Str Mod", "Str ST Mod", "Dex Mod", "Dex ST Mod", "Con Mod",
                    "Con ST Mod", "Int Mod", "Int ST Mod", "Wis Mod", "Wis ST Mod", "Cha Mod", "Cha ST Mod", "Acr", "Ani",
-                   "Arc", "Ath", "Dec", "His", "Ins", "Inti", "Inv Bonus", "Med", "Nat", "Perc", "Perf", "Pers", "Rel", "Sle",
+                   "Arc", "Ath", "Dec", "His", "Ins", "Inti", "Inv", "Med", "Nat", "Perc", "Perf", "Pers", "Rel", "Sle",
                    "Ste", "Sur"]
 
 character_data = {
