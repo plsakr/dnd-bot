@@ -35,7 +35,7 @@ def reformat_dice(inString):
     current = inString
     match = re.search(pattern, current)
     index = 0
-    while match is not None and index < 30:
+    while match is not None and index < 300:
         index += 1
         start, end = match.span()
         value = match.group()
@@ -55,8 +55,6 @@ def reformat_dice(inString):
                 current = current[0:start:] + '_Melee or Ranged Weapon Attack:_' + current[end::]
         elif command == '@hit':
             current = current[0:start:] + '+' + value.split(' ')[1] + current[end::]
-        elif command == '@damage':
-            current = current[0:start:] + value.split(' ', 1)[1] + current[end::]
         elif command == '@chance':
             current = current[0:start:] + value.split('|')[-1] + current[end::]
         elif command == '@dc':
@@ -65,8 +63,14 @@ def reformat_dice(inString):
             current = current[0:start:] + '_' + value.split(' ')[1] + '_' + current[end::]
         elif command == '@spell':
             current = current[0:start:] + '**' + value.split(' ', 1)[1] + '**' + current[end::]
-        elif command == '@dice':
+        elif command == '@item':
+            current = current[0:start:] + value.split(' ', 1)[1].split('|')[0].title() + current[end::]
+        elif command in ['@check', '@skill', '@dice', '@damage']:
             current = current[0:start:] + value.split(' ', 1)[1] + current[end::]
+        elif command == '@recharge':
+            min_rec = int(value.split(' ', 1)[1])
+            recharge = ','.join([str(i) for i in range(min_rec, 7)])
+            current = current[0:start:] + '(_Recharge: ' + recharge + '_)' + current[end::]
         match = re.search(pattern, current)
 
     return current
@@ -135,6 +139,8 @@ def format_spell(ctx, spell):
                 out = range_obj['distance']['type'].capitalize()
         elif range_obj['type'] in ['radius', 'cone']:
             out = '{0} {1} radius'.format(range_obj['distance']['amount'], range_obj['distance']['type'])
+        elif range_obj['type'] == 'line':
+            out = '{0} {1} line'.format(range_obj['distance']['amount'], range_obj['distance']['type'])
         return out
 
     def format_spell_entries(entries):
@@ -163,7 +169,7 @@ def format_spell(ctx, spell):
     if level == '0':
         desc += school + " cantrip "
     else:
-        desc += "level {0} {1}".format(level, school)
+        desc += "Level {0} {1}".format(level, school)
 
     color = 0xffffff
 
@@ -210,7 +216,7 @@ def format_spell(ctx, spell):
 def format_monster(ctx, monster):
     name = monster['name']
     mytype = monster['type'] if isinstance(monster['type'], str) else monster['type']['type']
-    caption = '*' + monster['size'] + ' ' + mytype + ', ALIGNMENT' + '*'
+    caption = '*' + monster['size'] + ' ' + mytype + ', ' + ''.join(monster['alignment']) + '*'
     ac = ''
     for ac_object in monster['ac']:
         if isinstance(ac_object, dict):
@@ -227,6 +233,8 @@ def format_monster(ctx, monster):
         else:
             ac += str(ac_object) + ", "
         ac = ac[:-2]
+
+    ac = reformat_dice(ac)
 
     hp = str(monster['hp']['average']) + ' (' + monster['hp']['formula'] + ')'
     speed = ''
@@ -357,7 +365,7 @@ def get_monster_embed(ctx, name, caption, ac, hp, speed, stre, dex, con, inte, w
     color = random.randint(0, 0xffffff)
     firstE = discord.Embed()
     # create an embed that looks like Avrae's
-    firstE.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar_url)
+    firstE.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar.url)
     firstE.colour = color
 
     embeds = [firstE]
