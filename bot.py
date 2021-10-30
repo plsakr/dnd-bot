@@ -84,6 +84,13 @@ async def roll(ctx, *, arg):
         await ctx.send('Invalid syntax. Check out correct syntax at: d20 library readme')
 
 
+@bot.command()
+async def rstats(ctx, *args):
+    await ctx.send('Rolling Character Stats:')
+    for i in range(0, 6):
+        await roll(ctx, arg="4d6rr1kh3")
+
+
 @bot.command(aliases=['py'])
 async def pythagorean(ctx, *, args):
     arg = args.split(' ')
