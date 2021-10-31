@@ -13,6 +13,8 @@ from main.initiative import Initiative
 import sys
 import math
 
+from main.cogs import search, initiative, character
+
 if len(sys.argv) == 1:
     dm.init_global_data(False)
 else:
@@ -26,7 +28,7 @@ class DnDBot(commands.Bot):
     My custom discord bot subclass
     """
     def __init__(self, prefix, description=None, **options):
-        super(DnDBot, self).__init__(prefix, description=description, **options)
+        super(DnDBot, self).__init__(prefix, description=description, activity=discord.Game(name='Backseat DM'), **options)
         self.cached_combat = None  # type: Initiative
 
 def get_command_prefix(msg):
@@ -38,11 +40,17 @@ def get_command_prefix(msg):
 bot = DnDBot(lambda _, msg: get_command_prefix(msg))  # todo: get from Mongo
 cogs = ['main.cogs.initiative', 'main.cogs.character', 'main.cogs.search']
 
+bot.add_cog(search.Search(bot))
+bot.add_cog(initiative.Init(bot))
+bot.add_cog(character.Character(bot))
+
+search_group = bot.command_group("search", "Search Commands")
 
 @bot.event
 async def on_ready():
-    for cog in cogs:
-        bot.load_extension(cog)
+    # for cog in cogs:
+    #     bot.load_extension(cog)
+    #     bot.a
     print('Logged on as {0}'.format(bot.user))
 
 
@@ -60,7 +68,7 @@ async def on_message(message):
     await bot.process_commands(message)
 
 
-@bot.command(aliases=['r'])
+@bot.slash_command(guild_ids=[608192441333317683])
 async def roll(ctx, *, arg):
     arg = arg.split(' ')
     adv = AdvType.NONE  # 0 -> none, -1 -> dis, 1 -> adv
@@ -79,28 +87,28 @@ async def roll(ctx, *, arg):
         print('Rolled {0}. Result:{1}'.format(term, str(result) if type(result) == RollResult else result))
         chatResult = 'Rolling {0} for {1}:\n'.format(term, ctx.author.mention)
         chatResult = chatResult + '{0}'.format(str(result) if type(result) == RollResult else result)
-        await ctx.send(chatResult)
+        await ctx.respond(chatResult)
     except:
-        await ctx.send('Invalid syntax. Check out correct syntax at: d20 library readme')
+        await ctx.respond('Invalid syntax. Check out correct syntax at: d20 library readme')
 
 
-@bot.command()
-async def rstats(ctx, *args):
-    await ctx.send('Rolling Character Stats:')
+@bot.slash_command(guild_ids=[608192441333317683])
+async def rstats(ctx):
+    await ctx.respond('Rolling Character Stats:')
     for i in range(0, 6):
         await roll(ctx, arg="4d6rr1kh3")
 
 
-@bot.command(aliases=['py'])
+@bot.slash_command(guild_ids=[608192441333317683])
 async def pythagorean(ctx, *, args):
     arg = args.split(' ')
 
     if len(arg) < 2:
-        await ctx.send('Invalid syntax.')
+        await ctx.respond('Invalid syntax.')
     else:
         result = int(arg[0])**2 + int(arg[1])**2
         result = round(math.sqrt(result),1)
-        await ctx.send('Pythagorean calculation for {0}: {1}'.format(ctx.author.mention, result))
+        await ctx.respond('Pythagorean calculation for {0}: {1}'.format(ctx.author.mention, result))
 
 
 @bot.command()
