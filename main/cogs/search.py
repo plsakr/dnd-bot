@@ -1,25 +1,26 @@
 from discord.ext import commands
+from discord.commands import slash_command
 import main.data_manager as dm
 import main.message_formatter as mf
-import main.helpers.reply_holder as rh
 import asyncio
 
 SEARCH_TYPES = ['spell', 'monster']
 
 
 class Search(commands.Cog):
+
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
+    @slash_command(guild_ids=[608192441333317683])
     async def spell(self, ctx, *, arg):
         await search('spell', arg, ctx)
 
-    @commands.command()
+    @slash_command(guild_ids=[608192441333317683])
     async def item(self, ctx, *, arg):
         await search('item', arg, ctx)
 
-    @commands.command()
+    @slash_command(guild_ids=[608192441333317683])
     async def monster(self, ctx, *, arg):
         await search('monster', arg, ctx)
 
@@ -31,7 +32,7 @@ async def search(search_type, arg, ctx, should_dm=False, should_send=True):
             print("Searching for " + term)
             monster_choices, names = dm.get_spell_choices(dm.create_grams(term.lower()))
             if len(monster_choices) == 0:
-                await ctx.send("Could not find any spells with those search terms. Are you that illiterate?")
+                await ctx.respond("Could not find any spells with those search terms. Are you that illiterate?")
             else:
                 if monster_choices[0]['score'] == 1.0:
                     print('found a spell with 100% match, sending directly')
@@ -39,8 +40,7 @@ async def search(search_type, arg, ctx, should_dm=False, should_send=True):
                     if not should_send:
                         return spell
                     message_queue = mf.format_spell(ctx, spell)
-                    for i in message_queue:
-                        await ctx.send(embed=i)
+                    await ctx.respond(embeds=message_queue)
                 else:
                     # there are more than one option. Print them out, and ask the user for a number
                     prompt = mf.format_monster_choices(names, ctx.author)
@@ -64,8 +64,7 @@ async def search(search_type, arg, ctx, should_dm=False, should_send=True):
                                 if not should_send:
                                     return monster
                                 message_queue = mf.format_spell(ctx, monster)
-                                for i in message_queue:
-                                    await ctx.send(embed=i)
+                                await ctx.respond(embeds=message_queue)
                             else:
                                 await ctx.send('Does that number look like it would work??')
                     except asyncio.TimeoutError:
@@ -83,8 +82,7 @@ async def search(search_type, arg, ctx, should_dm=False, should_send=True):
                     if not should_send:
                         return monster
                     message_queue = mf.format_monster(ctx, monster)
-                    for i in message_queue:
-                        await ctx.send(embed=i)
+                    await ctx.respond(embeds=message_queue)
                 else:
                     #there are more than one option. Print them out, and ask the user for a number
                     prompt = mf.format_monster_choices(names, ctx.author)
@@ -109,10 +107,9 @@ async def search(search_type, arg, ctx, should_dm=False, should_send=True):
                                 if not should_send:
                                     return monster
                                 message_queue = mf.format_monster(ctx, monster)
-                                for i in message_queue:
-                                    await ctx.send(embed=i)
+                                await ctx.respond(embeds=message_queue)
                             else:
-                                await ctx.send('Does that number look like it would work??')
+                                await ctx.respond('Does that number look like it would work??')
                     except asyncio.TimeoutError:
                         await ctx.send('Search canceled.')
 
