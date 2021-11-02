@@ -24,27 +24,16 @@ class Character(commands.Cog):
 
     @commands.command()
     async def chimport(self, ctx):
-
         if hasattr(ctx.message, 'attachments') and len(ctx.message.attachments) == 1:
-            await ctx.send("Importing character. Please wait while I download your character :p")
-            json_bytes = await ctx.message.attachments[0].read()
-            status = cm.import_from_json(json_bytes, ctx.author.id)
+            await ctx.send("Importing character. Please wait")
+            xml_bytes = await ctx.message.attachments[0].read()
+            data = cm.create_from_xml(xml_bytes)
+            status = cm.import_from_object(data, ctx.author.id)
             if status == cm.STATUS_OK:
                 _, char = cm.get_active_char(ctx.author.id)
                 await ctx.send('Imported ' + char['name'])
             elif status == cm.STATUS_ERR:
                 await ctx.send('There was an error while importing the character. Check logs!')
-        else:
-            await ctx.send('You need to upload your character file')
-
-    @commands.command()
-    async def chtest(self, ctx):
-
-        if hasattr(ctx.message, 'attachments') and len(ctx.message.attachments) == 1:
-            await ctx.send("Importing character. Please wait")
-            xml_bytes = await ctx.message.attachments[0].read()
-            data = cm.create_from_xml(xml_bytes)
-            await ctx.send("Calculated the following information:\n```json\n"+json.dumps(data, indent=4)+"\n```")
         else:
             await ctx.send('You need to upload your character file')
 

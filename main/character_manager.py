@@ -190,14 +190,7 @@ def create_from_xml(xml_bytes):
   #  spell_root = root.find('/{http://ns.adobe.com/xfdf/}fields/{http://ns.adobe.com/xfdf/}field[starts-with(@name,"P") and string-length(@name) =2]/{http://ns.adobe.com/xfdf/}field[@name="SSfront"]/{http://ns.adobe.com/xfdf/}field[@name="spells"]/{http://ns.adobe.com/xfdf/}field[@name="name"]')
     return data
 
-def import_from_json(json_bytes, user_id):
-    global active_players_and_characters
-    print('Importing data from pdf!')
-
-    json_string = json_bytes.decode("utf-8")
-    character = json.loads(json_string)
-    character['HP'] = character['HPMax']
-
+def import_from_object(character, user_id):
     player = list(filter(lambda x: x['user']['_id'] == user_id, active_players_and_characters))
     if len(player) == 1: # Found existing player! Check if this character exists
         player_chars = player[0]['user']['chars']
@@ -236,6 +229,16 @@ def import_from_json(json_bytes, user_id):
 
     print(character)
     return STATUS_OK
+
+## DEPRECATED
+def import_from_json(json_bytes, user_id):
+    global active_players_and_characters
+    print('Importing data from pdf!')
+
+    json_string = json_bytes.decode("utf-8")
+    character = json.loads(json_string)
+    character['HP'] = character['HPMax']
+    return import_from_object(character, user_id)
 
 
 # def import_from_pdf(pdf_bytes, user_id):
