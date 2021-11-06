@@ -150,7 +150,7 @@ def format_spell(ctx, spell):
             if isinstance(entry, str):
                 out += reformat_dice(entry) + '\n'
             else:
-                out += entry['name'] + ' ' + format_spell_entries(entry.entries)
+                out += '**' + entry['name'] + '** ' + format_spell_entries(entry["entries"])
         return out
 
     embed = []
