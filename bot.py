@@ -62,7 +62,7 @@ async def on_message(message):
 
 @bot.command(aliases=['r'])
 async def roll(ctx, *, arg):
-    if message.author.id == 234927286514614272:
+    if ctx.author.id == 234927286514614272:
         await ctx.send('Rolled a nat 1 because you are evil :D')
         return
     arg = arg.split(' ')
