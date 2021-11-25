@@ -37,13 +37,17 @@ class Initiative:
 
     players: List[Combatant]
 
-    def __init__(self):
-        self.players = []
-        self.current_init_index = -1
-        self.start_battle = False
-        self.battle_round = 0
-        self.cached_summary = None
-        self.dungeon_master = None
+    def __init__(self, players=[], current_init_index=-1, start_battle=False, battle_round=0, cached_summary=None, dungeon_master=None):
+        if len(players) > 0:
+            self.players = [Combatant(i.get('name'), i.get('init'), i.get('is_player'), i.get('mention'),
+                                      i.get('max_hp'), i.get('current_hp'), i.get('private')) for i in players]
+        else:
+            self.players = players
+        self.current_init_index = current_init_index
+        self.start_battle = start_battle
+        self.battle_round = battle_round
+        self.cached_summary = cached_summary
+        self.dungeon_master = dungeon_master
 
     def add_char(self, combatant):
         self.players.append(combatant)

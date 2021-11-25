@@ -14,6 +14,9 @@ import sys
 import math
 
 from main.cogs import search, initiative, character
+import logging
+from main.command_groups import init
+logging.basicConfig(level=logging.INFO)
 
 if len(sys.argv) == 1:
     dm.init_global_data(False)
@@ -40,11 +43,11 @@ def get_command_prefix(msg):
 bot = DnDBot(lambda _, msg: get_command_prefix(msg))  # todo: get from Mongo
 cogs = ['main.cogs.initiative', 'main.cogs.character', 'main.cogs.search']
 
+search_group = bot.command_group("search", "Search Commands")
+bot.add_application_command(init)
 bot.add_cog(search.Search(bot))
 bot.add_cog(initiative.Init(bot))
 bot.add_cog(character.Character(bot))
-
-search_group = bot.command_group("search", "Search Commands")
 
 @bot.event
 async def on_ready():

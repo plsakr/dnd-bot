@@ -2,6 +2,8 @@ import main.database_manager as db
 import json
 import os
 
+from main.initiative import Initiative
+
 BOT_TOKEN = ""
 GOOGLE_JSON_FILE = ""
 MONGO_CONNECTION = ""
@@ -52,8 +54,28 @@ def create_character(character):
     return db.create_character(character)
 
 
+def delete_character(char_id):
+    return db.delete_character(char_id)
+
+
 def retrieve_or_create_user(id):
     return db.retrieve_or_create_user(id)
+
+
+def get_cached_combat(guild_id, channel_id):
+    cached_obj = db.retrieve_channel_combat(guild_id, channel_id)
+    if cached_obj is not None:
+        return Initiative(cached_obj['players'],
+                          cached_obj['current_init_index'],
+                          cached_obj['start_battle'],
+                          cached_obj['battle_round'],
+                          cached_obj['cached_summary'],
+                          cached_obj['dungeon_master'], )
+    return None
+
+
+def save_cached_combat(guild_id, channel_id, combat):
+    db.save_channel_combat(guild_id, channel_id, combat)
 
 
 def get_spell(name):
@@ -131,7 +153,7 @@ def _init_monster_data():
         f.close()
 
         for filename in data['filenames']:
-            with open('./data/monsters/'+filename) as mf:
+            with open('./data/monsters/' + filename) as mf:
                 monster_data = json.load(mf)
                 mf.close()
                 all_monsters = monster_data['monster']
@@ -146,7 +168,7 @@ def _init_spell_data():
         f.close()
 
         for filename in data['filenames']:
-            with open('./data/spells/'+filename) as sf:
+            with open('./data/spells/' + filename) as sf:
                 spell_data = json.load(sf)
                 sf.close()
                 all_spells = spell_data['spell']
@@ -161,6 +183,6 @@ def create_grams(query: str, n=3):
     for w in words:
         length = len(w)
         for i in range(0, length, n):
-            out.append(w[i:i+n])
+            out.append(w[i:i + n])
 
     return out
