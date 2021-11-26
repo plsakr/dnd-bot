@@ -74,6 +74,12 @@ def create_character(character):
     return x.inserted_id
 
 
+def delete_character(character_id):
+    global db
+    chars: collection = db.chars
+    chars.delete_one({'_id': character_id})
+
+
 @measure_time
 def exists_character_id(id):
     global db
@@ -193,6 +199,41 @@ def retrieve_spell_name(bId):
     global db
     spells = db.spells
     return spells.find_one({"_id": bId}, {'name': 1})['name']
+
+
+def retrieve_channel_combat(guild_id, channel_id):
+    """
+    Get the cached combat, if any, for a channel in a guild.
+    :param guild_id: The id of the guild to search for
+    :param channel_id: The id of the channel to search for
+    :return: a combat object if it exists, or None.
+    """
+    global db
+    settings = db.settings
+    guild_doc = settings.find_one({"guild_id": guild_id})
+    if guild_doc is not None:
+        if 'combats' in guild_doc:
+            combats = guild_doc['combats']
+            if str(channel_id) in combats.keys():
+                return combats[str(channel_id)]
+    return None
+
+
+def save_channel_combat(guild_id, channel_id, combat_object):
+    global db
+    settings = db.settings
+    guild_doc = settings.find_one({"guild_id": guild_id})
+    if guild_doc is not None:
+        if 'combats' in guild_doc:
+            if combat_object is None:
+                guild_doc['combats'].pop(str(channel_id))
+            else:
+                guild_doc['combats'][str(channel_id)] = combat_object
+        else:
+            guild_doc['combats'] = {str(channel_id): combat_object}
+    else:
+        guild_doc = {'guild_id': guild_id, 'combats': {str(channel_id): combat_object}}
+    settings.replace_one({"guild_id": guild_id}, guild_doc, upsert=True)
 
 
 def retrieve_guild_prefix(guild_id, default_prefix):

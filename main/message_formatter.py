@@ -4,11 +4,28 @@ import random
 import re
 
 
+class Dropdown(discord.ui.Select):
+    def __init__(self, dropdown_options, select_callback):
+        options = [discord.SelectOption(label=dropdown_options[i], value=str(i)) for i in range(0, len(dropdown_options))]
+        options.append(discord.SelectOption(label='Cancel Selection', value=str(len(dropdown_options))))
+        self.on_select = select_callback
+        super().__init__(placeholder="Make a choice...", min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        index = int(self.values[0])
+        await self.on_select(index, interaction)
+
+
+class DropdownView(discord.ui.View):
+    def __init__(self, dropdown_options, dropdown_callback):
+        super().__init__()
+        self.add_item(Dropdown(dropdown_options, dropdown_callback))
+
 
 def format_characters(character_list, author, active_id, choosing=False):
     output = ""
     if not choosing:
-        output = "{0}'s imported characters:\n".format(author.mention)
+        output = "Your imported characters:\n".format(author.mention)
     else:
         output = "{0} Reply with a number to switch characters:\n".format(author.mention)
     index = 1

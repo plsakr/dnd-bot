@@ -1,9 +1,56 @@
+from discord import NotFound
 from discord.ext import commands
+from discord.commands import slash_command, Option
 import main.character_manager as cm
 import main.message_formatter as mf
-import main.helpers.reply_holder as rh
 from d20 import AdvType
-import json
+
+from main.helpers.annotations import my_slash_command
+from main.initiative import Initiative, Combatant
+import main.data_manager as dm
+
+SKILLS = [
+    'acr',
+    'ani',
+    'arc',
+    'ath',
+    'dec',
+    'his',
+    'ins',
+    'inti',
+    'inv',
+    'med',
+    'nat',
+    'perc',
+    'perf',
+    'pers',
+    'rel',
+    'sle',
+    'ste',
+    'sur'
+]
+MAIN_CHECKS = ['str', 'dex', 'con', 'int', 'wis', 'char']
+
+def obj_to_dict(obj):
+    if type(obj) is dict:
+        res = {}
+        for k, v in obj.items():
+            res[k] = obj_to_dict(v)
+        return res
+    elif type(obj) is list:
+        return [obj_to_dict(item) for item in obj]
+    elif type(obj) in [Initiative, Combatant]:
+        return obj_to_dict(vars(obj))
+    else:
+        return obj
+
+async def save_combat(ctx, cbt):
+    combat_obj = obj_to_dict(cbt) if cbt is not None else None
+    dm.save_cached_combat(ctx.guild.id, ctx.channel.id, combat_obj)
+
+
+async def get_cached_combat(ctx):
+    return dm.get_cached_combat(ctx.guild.id, ctx.channel.id)
 
 
 class Character(commands.Cog):
@@ -16,11 +63,11 @@ class Character(commands.Cog):
         print(result)
         if status == cm.STATUS_OK:
             chat_result = ctx.author.mention + ":game_die: " + result
-            await ctx.send(chat_result)
+            await ctx.respond(chat_result)
         elif status == cm.STATUS_ERR:
-            await ctx.send('use ?chimport first!')
+            await ctx.respond('use `chimport` first!')
         elif status == cm.STATUS_INVALID_INPUT:
-            await ctx.send('Not a valid check!')
+            await ctx.respond('Not a valid check!')
 
     @commands.command()
     async def chimport(self, ctx):
@@ -37,88 +84,111 @@ class Character(commands.Cog):
         else:
             await ctx.send('You need to upload your character file')
 
-
-    @commands.command()
-    async def chars(self, ctx, *arg):
+    @my_slash_command()
+    async def chars(self, ctx):
         status, active_char = cm.get_active_char(ctx.author.id)
         if status == cm.STATUS_ERR:
-            await ctx.send("Could not retrieve your characters. Have you imported any yet?")
+            await ctx.respond("Could not retrieve your characters. Have you imported any yet?", ephemeral=True)
             return
         characters = cm.get_player_characters_list(ctx.author.id)
         msg_text = mf.format_characters(characters, ctx.author, active_char['_id'])
-        await ctx.send(msg_text)
+        await ctx.respond(msg_text, ephemeral=True)
 
-    @commands.command()
-    async def switch(self, ctx, *args):
+    @my_slash_command()
+    async def switch(self, ctx):
         characters = cm.get_player_characters_list(ctx.author.id)
         if len(characters) < 2:
-            await ctx.send("You have less than 2 imported characters. Use `?chars` to list your characters")
+            await ctx.respond("You have less than 2 imported characters. Use `/chars` to list your characters")
             return
         _, active_char = cm.get_active_char(ctx.author.id)
-        msg_text = mf.format_characters(characters, ctx.author, active_char['_id'], choosing=True)
-        await ctx.send(msg_text)
+        char_names = [i['name'] for i in characters]
 
-        async def on_reply(reply):
-            try:
-                index = int(reply) - 1
-                new_id = characters[index]['id']
-                char = characters[index]
-                success_msg = "{0} set your active character to: {1}".format(ctx.author.mention, char['name'])
-                if cm.switch_active_character(ctx.author.id, new_id):
-                    await ctx.send(success_msg)
-            except ValueError:
-                await ctx.send("Please input a number. Switching Canceled. Use `?switch` again")
+        async def on_reply(index, interaction):
+            new_id = characters[index]['id']
+            char = characters[index]
+            success_msg = "I set your active character to: {0}".format(char['name'])
+            if cm.switch_active_character(ctx.author.id, new_id):
+                await interaction.response.edit_message(content=success_msg, view=None)
 
-        rep = rh.ReplyHolder(ctx.author.id, on_reply)
-        rh.replies.append(rep)
+        await ctx.respond(content="Choose a new character from the dropdown below:",
+                          view=mf.DropdownView(char_names, on_reply), ephemeral=True)
 
-
-    @commands.command(aliases=['ch'])
-    async def check(self, ctx, *arg):
-        adv = AdvType.NONE
-        if len(arg) > 1:
-            if 'adv' in arg[1].lower():
-                adv = AdvType.ADV
-            elif 'dis' in arg[1].lower():
-                adv = AdvType.DIS
-        elif len(arg) == 0:
-            await ctx.send('Please input a valid check!')
+    @my_slash_command()
+    async def del_char(self, ctx):
+        characters = cm.get_player_characters_list(ctx.author.id)
+        if len(characters) < 2:
+            await ctx.respond("You have less than 2 imported characters. You cannot delete your last character!", ephemeral=True)
             return
+        _, active_char = cm.get_active_char(ctx.author.id)
+        inactive_chars = list(filter(lambda c: c['id'] != active_char['_id'], characters))
+        char_names = [i['name'] for i in inactive_chars]
 
-        status, result = cm.roll_check(ctx.author.id, arg[0], adv)
-        await self.send_result(status, result, ctx)
+        async def on_reply(index, interaction):
+            if index < len(inactive_chars):
+                to_delete_id = inactive_chars[index]['id']
+                char = characters[index]
+                success_msg = "I deleted {0}".format(char['name'])
+                if cm.delete_character(to_delete_id, ctx.author.id) > -99:
+                    await interaction.response.edit_message(content=success_msg, view=None)
+            else:
+                await interaction.response.edit_message(content='Delete cancelled. Nothing was saved or deleted.', view=None)
 
-    @commands.command(aliases=['s'])
-    async def save(self, ctx, *args):
+        await ctx.respond(content="Choose a character to delete from below. *Note that this cannot be undone*",
+                          view=mf.DropdownView(char_names, on_reply), ephemeral=True)
+
+    @my_slash_command()
+    async def check(self,
+                    ctx,
+                    attribute: Option(str, "Choose a check", choices=MAIN_CHECKS + SKILLS),
+                    advantage: Option(str, "Advantage status", required=False, choices=["None", "Advantage", "Disadvantage"], default="None")):
         adv = AdvType.NONE
-        if len(args) > 1:
-            if 'adv' in args[1].lower():
-                adv = AdvType.ADV
-            elif 'dis' in args[1].lower():
-                adv = AdvType.DIS
 
-        status, result = cm.roll_save(ctx.author.id, args[0], adv)
+        if advantage == 'Advantage':
+            adv = AdvType.ADV
+        elif advantage == 'Disadvantage':
+            adv = AdvType.DIS
+
+        status, result = cm.roll_check(ctx.author.id, attribute, adv)
         await self.send_result(status, result, ctx)
 
-    @commands.command()
-    async def hp(self, ctx, *args):
+    @my_slash_command()
+    async def save(self, ctx,
+                   attribute: Option(str, "Choose a save", choices=MAIN_CHECKS),
+                   advantage: Option(str, "Advantage status", required=False, choices=["None", "Advantage", "Disadvantage"], default="None")):
+        adv = AdvType.NONE
+
+        if advantage == 'Advantage':
+            adv = AdvType.ADV
+        elif advantage == 'Disadvantage':
+            adv = AdvType.DIS
+
+        status, result = cm.roll_save(ctx.author.id, attribute, adv)
+        await self.send_result(status, result, ctx)
+
+    @my_slash_command()
+    async def hp(self, ctx, modifier: Option(int, "HP Modifier", required=False, default=0)):
         status, cha = cm.get_active_char(ctx.author.id)
         if status == cm.STATUS_ERR:
-            ctx.send("please import a character first. mK? thanks!")
+            ctx.respond("Please import a character first. mK? thanks!")
         else:
-            if len(args) == 0:
-                await ctx.send('{0}: {1}/{2}'.format(cha['name'], cha['HP'], cha['HPMax']))
+            if modifier == 0 or modifier is None:
+                await ctx.respond('{0}: {1}/{2}'.format(cha['name'], cha['HP'], cha['HPMax']))
             else:
-                mod = int(args[0])
-                cm.update_character_hp(cha, mod)
+                cm.update_character_hp(cha, modifier)
 
-                if self.bot.cached_combat is None:
-                    await ctx.send('{0}: {1}/{2}'.format(cha['name'], cha['HP'], cha['HPMax']))
+                combat = await get_cached_combat(ctx)
+                if combat is None:
+                    await ctx.respond('{0}: {1}/{2}'.format(cha['name'], cha['HP'], cha['HPMax']))
                 else:
-                    cbt = self.bot.cached_combat.get_combatant_from_name(cha['name'])
-                    cbt.modify_health(mod)
-                    await ctx.send(cbt.get_summary())
-                    await self.bot.cached_combat.cached_summary.edit(content=self.bot.cached_combat.get_full_text())
+                    cbt = combat.get_combatant_from_name(cha['name'])
+                    cbt.modify_health(modifier)
+                    await ctx.respond(cbt.get_summary())
+                    await save_combat(ctx, combat)
+                    try:
+                        message = await ctx.fetch_message(combat.cached_summary)
+                        await message.edit(combat.get_full_text())
+                    except NotFound:
+                        print('could not find message!')
 
 
 def setup(bot):

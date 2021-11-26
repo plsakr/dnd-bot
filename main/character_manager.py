@@ -190,6 +190,19 @@ def create_from_xml(xml_bytes):
   #  spell_root = root.find('/{http://ns.adobe.com/xfdf/}fields/{http://ns.adobe.com/xfdf/}field[starts-with(@name,"P") and string-length(@name) =2]/{http://ns.adobe.com/xfdf/}field[@name="SSfront"]/{http://ns.adobe.com/xfdf/}field[@name="spells"]/{http://ns.adobe.com/xfdf/}field[@name="name"]')
     return data
 
+
+def delete_character(character_id, user_id):
+    player = list(filter(lambda x: x['user']['_id'] == user_id, active_players_and_characters))
+    if len(player) == 1:
+        new_chars = list(filter(lambda c: c['id'] != character_id, player[0]['user']['chars']))
+        player[0]['user']['chars'] = new_chars
+        data.upsert_user(player[0]['user'])
+        data.delete_character(character_id)
+        return STATUS_OK
+    else:
+        return STATUS_ERR
+
+
 def import_from_object(character, user_id):
     player = list(filter(lambda x: x['user']['_id'] == user_id, active_players_and_characters))
     if len(player) == 1: # Found existing player! Check if this character exists
