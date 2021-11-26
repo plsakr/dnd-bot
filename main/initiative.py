@@ -105,6 +105,13 @@ class Initiative:
     def get_combatant_from_name(self, name):
         return list(filter(lambda x: x.name == name, self.players))[0]
 
+    def all_players_dead(self) -> bool:
+        for p in self.players:
+            if p.is_player and p.current_hp > 0:
+                return False
+
+        return True
+
     def next(self) -> Combatant:
         self.players[self.current_init_index].current_turn = False
         self.current_init_index += 1

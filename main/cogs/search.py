@@ -2,6 +2,7 @@ from discord.ext import commands
 from discord.commands import slash_command, Option
 import main.data_manager as dm
 import main.message_formatter as mf
+from main.helpers.annotations import my_slash_command
 
 SEARCH_TYPES = ['spell', 'monster']
 
@@ -10,7 +11,7 @@ class Search(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @slash_command(guild_ids=[608192441333317683])
+    @my_slash_command()
     async def spell(self, ctx, term: Option(str, "Enter search term")):
         async def on_find(spell):
             message_queue = mf.format_spell(ctx, spell)
@@ -23,11 +24,11 @@ class Search(commands.Cog):
 
         await search('spell', term, ctx, on_find, on_find_interaction)
 
-    @slash_command(guild_ids=[608192441333317683])
+    @my_slash_command()
     async def item(self, ctx, term: Option(str, "Enter search term")):
         await search('item', term, ctx)
 
-    @slash_command(guild_ids=[608192441333317683])
+    @my_slash_command()
     async def monster(self, ctx, term: Option(str, "Enter search term")):
         async def on_find(monster):
             message_queue = mf.format_monster(ctx, monster)

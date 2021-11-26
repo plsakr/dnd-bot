@@ -4,6 +4,7 @@ from discord.ext import commands
 from discord import channel, NotFound
 from discord.commands import Option
 
+from main.helpers.annotations import my_slash_command
 from main.initiative import Initiative, Combatant
 from d20 import roll as d20_roll
 from main.cogs.search import search
@@ -27,7 +28,6 @@ def obj_to_dict(obj):
     else:
         return obj
 
-
 async def save_combat(ctx, cbt):
     combat_obj = obj_to_dict(cbt) if cbt is not None else None
     dm.save_cached_combat(ctx.guild.id, ctx.channel.id, combat_obj)
@@ -37,11 +37,18 @@ async def get_cached_combat(ctx):
     return dm.get_cached_combat(ctx.guild.id, ctx.channel.id)
 
 
+async def autocomplete_combatants(interaction, value):
+    combat = dm.get_cached_combat(interaction.guild_id, interaction.channel_id)
+    if combat is None:
+        return []
+    return [x.name for x in combat.players if x.name.lower().startswith(value.strip().lower())]
+
+
 class Init(commands.Cog):
     def __init__(self, bot):
         self.bot = bot  # type: DnDBot
 
-    @init.command(guild_ids=[608192441333317683])
+    @my_slash_command()
     async def info(self, ctx):
         """
         """
@@ -52,7 +59,7 @@ class Init(commands.Cog):
             summary = cbt.get_full_text()
             await ctx.respond(summary)
 
-    @init.command(guild_ids=[608192441333317683])
+    @my_slash_command()
     async def begin(self, ctx):
         if (await get_cached_combat(ctx)) is not None:
             await ctx.respond('Please end combat using `?i end` first!', ephemeral=True)
@@ -68,7 +75,7 @@ class Init(commands.Cog):
             await save_combat(ctx, cached_combat)
             await message.pin()
 
-    @init.command(guild_ids=[608192441333317683])
+    @my_slash_command()
     async def end(self, ctx):
         combat = await get_cached_combat(ctx)
         if combat is None:
@@ -85,7 +92,7 @@ class Init(commands.Cog):
                 await save_combat(ctx, None)
                 await ctx.respond("Combat has ended. ~~Here's to the next TPK~~ :beers:")
 
-    @init.command(guild_ids=[608192441333317683])
+    @my_slash_command()
     async def join(self, ctx):
         combat = await get_cached_combat(ctx)
         if combat is None:
@@ -103,7 +110,7 @@ class Init(commands.Cog):
                     await msg.edit(combat.get_full_text())
                 await save_combat(ctx, combat)
 
-    @init.command(guild_ids=[608192441333317683])
+    @my_slash_command()
     async def add(self, ctx, name: Option(str, "Name of combatant"),
                   init_bonus: Option(int, "Initiative bonus / value"),
                   set_init: Option(bool, "Set initiative directly?", required=False, default=False),
@@ -113,25 +120,28 @@ class Init(commands.Cog):
             await ctx.send('Combat has not started!', ephemeral=True)
         else:
 
-            if set_init is not None and set_init:
-                i = init_bonus
-                ctx.respond('Added combatant at specific initiative!', ephemeral=True)
+            if name.strip() not in [x.name for x in combat.players]:
+                if set_init is not None and set_init:
+                    i = init_bonus
+                    ctx.respond('Added combatant at specific initiative!', ephemeral=True)
+                else:
+                    i = await roll_initiative(ctx, None, init_bonus, True)
+
+                cbt = Combatant(name, i, True, None, hp if hp != 0 else None, None,
+                                private=True)
+                print("ADDED A COMBATANT {0}".format(cbt))
+
+                combat.add_char(cbt)
+                await save_combat(ctx, combat)
+                try:
+                    message = await ctx.fetch_message(combat.cached_summary)
+                    await message.edit(combat.get_full_text())
+                except NotFound:
+                    print('could not find message!')
             else:
-                i = await roll_initiative(ctx, None, init_bonus, True)
+                await ctx.respond('That name already exists in initiative! Please change the name and try again', ephemeral=True)
 
-            cbt = Combatant(name, i, False, None, hp if hp != 0 else None, None,
-                            private=True)
-            print("ADDED A COMBATANT {0}".format(cbt))
-
-            combat.add_char(cbt)
-            await save_combat(ctx, combat)
-            try:
-                message = await ctx.fetch_message(combat.cached_summary)
-                await message.edit(combat.get_full_text())
-            except NotFound:
-                print('could not find message!')
-
-    @init.command(guild_ids=[608192441333317683])
+    @my_slash_command()
     async def madd(self, ctx, name: Option(str, "Monster name"), custom_hp: Option(int, "Custom hp", required=False, default=0)):
         combat = await get_cached_combat(ctx)
         if combat is None:
@@ -170,8 +180,9 @@ class Init(commands.Cog):
 
                 await search('monster', name, ctx, on_monster_found, on_find_monster_i)
 
-    @init.command(guild_ids=[608192441333317683])
-    async def remove_combatant(self, ctx, name: Option(str, 'Name of combatant to remove')):
+    @my_slash_command()
+    async def remove_combatant(self, ctx, name: Option(str, 'Name of combatant to remove',
+                                                       autocomplete=autocomplete_combatants)):
         combat = await get_cached_combat(ctx)
         if combat is None:
             await ctx.respond('Combat has not started!', ephemeral=True)
@@ -179,9 +190,8 @@ class Init(commands.Cog):
             if combat.dungeon_master != ctx.author.id:
                 await ctx.respond('Only the DM can remove monsters from combat!', ephemeral=True)
             else:
-                await ctx.message.delete()
 
-                result = self.bot.cached_combat.attempt_char_removal(name)
+                result = combat.attempt_char_removal(name)
                 if result != -2:
                     # if it is their turn, DO NOT ALLOW REMOVAL!
                     if result == -1:
@@ -189,7 +199,8 @@ class Init(commands.Cog):
                     else:
                         await ctx.respond('Removed {0} from initiative'.format(name))
                 else:
-                    await ctx.respond('Could not find that combatant in initiative. Please type the whole name', ephemeral=True)
+                    await ctx.respond('Could not find that combatant in initiative. Please type the whole name',
+                                      ephemeral=True)
                 await save_combat(ctx, combat)
                 try:
                     message = await ctx.fetch_message(combat.cached_summary)
@@ -197,26 +208,28 @@ class Init(commands.Cog):
                 except NotFound:
                     print('could not find message!')
 
-    # TODO: migrate to slash!
-    @init.command(aliases=['hp'])
-    async def health(self, ctx, *args):
-        if self.bot.cached_combat is None:
-            await ctx.send('Combat has not started!')
+    @my_slash_command()
+    async def health(self, ctx, combatant: Option(str, "name of combatant", autocomplete=autocomplete_combatants),
+                     modifier: Option(int, "health modifier")):
+        combat = await get_cached_combat(ctx)
+        if combat is None:
+            await ctx.respond('Combat has not started!', ephemeral=True)
         else:
-            if self.bot.cached_combat.dungeon_master != ctx.author:
-                await ctx.send('Only the DM can edit NPC HP!')
+            if combat.dungeon_master != ctx.author.id:
+                await ctx.respond('Only the DM can edit NPC hp!', ephemeral=True)
             else:
-                if len(args) < 2:
-                    print('NOT ENOUGH OPERANDS!')
-                else:
-                    cbt = self.bot.cached_combat.get_combatant_from_name(args[0])
-                    cbt.modify_health(int(args[1]))
-                    await ctx.send(cbt.get_summary())
-                    await self.bot.cached_combat.cached_summary.edit(content=self.bot.cached_combat.get_full_text())
-                    await ctx.author.send(cbt.get_summary() + "Health: {}".format(cbt.current_hp))
-                    await ctx.message.delete()
+                cbt = combat.get_combatant_from_name(combatant)
+                cbt.modify_health(modifier)
+                await ctx.respond(cbt.get_summary())
+                await save_combat(ctx, combat)
+                try:
+                    message = await ctx.fetch_message(combat.cached_summary)
+                    await message.edit(combat.get_full_text())
+                except NotFound:
+                    print('could not find message!')
+                await ctx.author.send(cbt.get_summary() + "Health: {}".format(cbt.current_hp))
 
-    @init.command(guild_ids=[608192441333317683])
+    @my_slash_command()
     async def next(self, ctx):
         combat = await get_cached_combat(ctx)
         if combat is None:
@@ -233,11 +246,11 @@ class Init(commands.Cog):
                     print('I see dead people!')
                     await ctx.send('{0} is dead. Skipping their turn!'.format(current.name))
                     to_remove.append(current.name)
-                    current = self.bot.cached_combat.next()
+                    current = combat.next()
 
                 if len(to_remove) > 0:
                     await ctx.send('Removing {0} dead combatants!'.format(len(to_remove)))
-                    [self.bot.cached_combat.attempt_char_removal(i) for i in to_remove]
+                    [combat.attempt_char_removal(i) for i in to_remove]
                 try:
                     message = await ctx.fetch_message(combat.cached_summary)
                     await message.edit(combat.get_full_text())
@@ -245,6 +258,17 @@ class Init(commands.Cog):
                     print('could not find message!')
 
                 await save_combat(ctx, combat)
+
+                if len(combat.players) == 0 or combat.all_players_dead(): # all player combatants dead. send TPK message and end combat!
+                    await ctx.respond('Well Done DM! You got everyone killed. TPK Accomplished!')
+                    try:
+                        msg = await ctx.fetch_message(combat.cached_summary)
+                        await msg.delete()
+                    except NotFound:
+                        print('could not delete combat message')
+                    await save_combat(ctx, None)
+                    return
+
                 await ctx.respond("{0}{1} its your turn in initiative!".format(
                     current.mention + " " if current.mention is not None else "", current.name))
 

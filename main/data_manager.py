@@ -7,12 +7,14 @@ from main.initiative import Initiative
 BOT_TOKEN = ""
 GOOGLE_JSON_FILE = ""
 MONGO_CONNECTION = ""
+TEST_GUILD_ID = -1
 
 
 def init_global_data(is_test):
     print('beginning data initialization')
     global BOT_TOKEN
     global MONGO_CONNECTION
+    global TEST_GUILD_ID
 
     if not is_test:
         BOT_TOKEN = os.environ['BOT_TOKEN']
@@ -25,6 +27,7 @@ def init_global_data(is_test):
             else:
                 BOT_TOKEN = data['test_token']
             MONGO_CONNECTION = data['mongo_connection']
+            TEST_GUILD_ID = data['guild_id']
     db.init_db_connection(MONGO_CONNECTION)
     _init_monster_data()
     _init_spell_data()

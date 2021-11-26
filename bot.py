@@ -3,25 +3,28 @@ import discord.ext.commands as commands
 
 from d20 import RollResult, AdvType
 from d20 import roll as d20_roll
+from discord import SlashCommand
 
 import main.character_manager as cm
 
 import main.data_manager as dm
-import main.helpers.reply_holder as rh
-from main.database_manager import retrieve_guild_prefix, set_guild_prefix
-from main.initiative import Initiative
 import sys
-import math
-
-from main.cogs import search, initiative, character
-import logging
-from main.command_groups import init
-logging.basicConfig(level=logging.INFO)
 
 if len(sys.argv) == 1:
     dm.init_global_data(False)
 else:
     dm.init_global_data(sys.argv[1])
+
+from main.database_manager import retrieve_guild_prefix, set_guild_prefix
+
+from main.initiative import Initiative
+import math
+
+from main.cogs import search, initiative, character
+import logging
+from main.command_groups import init
+
+logging.basicConfig(level=logging.INFO)
 
 DEFAULT_PREFIX = '?'
 
@@ -30,9 +33,18 @@ class DnDBot(commands.Bot):
     """
     My custom discord bot subclass
     """
+
     def __init__(self, prefix, description=None, **options):
-        super(DnDBot, self).__init__(prefix, description=description, activity=discord.Game(name='Backseat DM'), **options)
+        super(DnDBot, self).__init__(prefix, description=description, activity=discord.Game(name='Backseat DM'),
+                                     **options)
         self.cached_combat = None  # type: Initiative
+
+    def slash_command(self, **kwargs):
+        if dm.TEST_GUILD_ID > 0:
+            return self.application_command(cls=SlashCommand, guild_ids=[dm.TEST_GUILD_ID], **kwargs)
+        else:
+            return self.application_command(cls=SlashCommand, **kwargs)
+
 
 def get_command_prefix(msg):
     if msg.guild is None:
@@ -49,6 +61,7 @@ bot.add_cog(search.Search(bot))
 bot.add_cog(initiative.Init(bot))
 bot.add_cog(character.Character(bot))
 
+
 @bot.event
 async def on_ready():
     # for cog in cogs:
@@ -57,21 +70,7 @@ async def on_ready():
     print('Logged on as {0}'.format(bot.user))
 
 
-@bot.event
-async def on_message(message):
-    if message.author == bot.user:
-        return
-
-    # print('Message from {0.author}: {0.content}'.format(message))
-    # todo: remove this idea
-    if len(rh.replies) > 0:
-        for r in rh.replies:
-            await r.perform_reply(message.author.id, message.content)
-
-    await bot.process_commands(message)
-
-
-@bot.slash_command(guild_ids=[608192441333317683])
+@bot.slash_command()
 async def roll(ctx, *, arg):
     arg = arg.split(' ')
     adv = AdvType.NONE  # 0 -> none, -1 -> dis, 1 -> adv
@@ -95,22 +94,22 @@ async def roll(ctx, *, arg):
         await ctx.respond('Invalid syntax. Check out correct syntax at: d20 library readme')
 
 
-@bot.slash_command(guild_ids=[608192441333317683])
+@bot.slash_command()
 async def rstats(ctx):
     await ctx.respond('Rolling Character Stats:')
     for i in range(0, 6):
         await roll(ctx, arg="4d6rr1kh3")
 
 
-@bot.slash_command(guild_ids=[608192441333317683])
+@bot.slash_command()
 async def pythagorean(ctx, *, args):
     arg = args.split(' ')
 
     if len(arg) < 2:
         await ctx.respond('Invalid syntax.')
     else:
-        result = int(arg[0])**2 + int(arg[1])**2
-        result = round(math.sqrt(result),1)
+        result = int(arg[0]) ** 2 + int(arg[1]) ** 2
+        result = round(math.sqrt(result), 1)
         await ctx.respond('Pythagorean calculation for {0}: {1}'.format(ctx.author.mention, result))
 
 
