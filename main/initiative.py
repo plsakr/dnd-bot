@@ -107,7 +107,7 @@ class Initiative:
 
     def all_players_dead(self) -> bool:
         for p in self.players:
-            if p.is_player and p.current_hp is not None and p.current_hp > 0:
+            if p.is_player and (p.current_hp is None or p.current_hp > 0):
                 return False
 
         return True
