@@ -22,10 +22,12 @@ class Search(commands.Cog):
                 message_queue = mf.format_spell(ctx, spell)
                 await interaction.response.send_message(embeds=message_queue)
 
+        await ctx.defer()
         await search('spell', term, ctx, on_find, on_find_interaction)
 
     @my_slash_command()
     async def item(self, ctx, term: Option(str, "Enter search term")):
+        await ctx.defer()
         await search('item', term, ctx)
 
     @my_slash_command()
@@ -38,6 +40,8 @@ class Search(commands.Cog):
             if monster is not None:
                 message_queue = mf.format_monster(ctx, monster)
                 await interaction.response.send_message(embeds=message_queue)
+
+        await ctx.defer()
         await search('monster', term, ctx, on_find, on_find_interaction)
 
 
@@ -76,7 +80,7 @@ async def search(search_type, arg, ctx, on_find, on_find_interaction):
                 if monster_choices[0]['score'] == 1.0:
                     print('found a monster with 100% match, sending directly')
                     monster = dm.get_monster_by_id(monster_choices[0]['ref'])
-                    on_find(monster)
+                    await on_find(monster)
                 else:
                     #there are more than one option. Print them out, and ask the user for a number
                     async def on_choose(i, interaction):

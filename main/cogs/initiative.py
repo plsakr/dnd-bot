@@ -56,20 +56,19 @@ class Init(commands.Cog):
 
         cbt = await get_cached_combat(ctx)
         if cbt is not None:
-            summary = cbt.get_full_text()
-            await ctx.respond(summary)
+            await ctx.respond("This command is deprecated... Check the pinned messages for updated combat data!")
 
     @my_slash_command()
     async def begin(self, ctx):
         if (await get_cached_combat(ctx)) is not None:
-            await ctx.respond('Please end combat using `?i end` first!', ephemeral=True)
+            await ctx.respond('Please end combat using `/end` first!', ephemeral=True)
         else:  # STARTING COMBAT
             print('Oh boy starting combat!!')
             cached_combat = Initiative()
             cached_combat.dungeon_master = ctx.author.id
             summary = cached_combat.get_full_text()
             await ctx.respond('Starting combat on this channel! Good luck DM!', ephemeral=True)
-            await ctx.send('Your DM has begun Combat! Join by typing `?i join`')
+            await ctx.send('Your DM has begun Combat! Join by typing `/join`')
             message = await ctx.send(summary)
             cached_combat.cached_summary = message.id
             await save_combat(ctx, cached_combat)
