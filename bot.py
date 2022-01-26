@@ -52,10 +52,9 @@ def get_command_prefix(msg):
     return retrieve_guild_prefix(msg.guild.id, DEFAULT_PREFIX)
 
 
-bot = DnDBot(lambda _, msg: get_command_prefix(msg))  # todo: get from Mongo
+bot = DnDBot(lambda _, msg: get_command_prefix(msg))
 cogs = ['main.cogs.initiative', 'main.cogs.character', 'main.cogs.search']
 
-search_group = bot.command_group("search", "Search Commands")
 bot.add_application_command(init)
 bot.add_cog(search.Search(bot))
 bot.add_cog(initiative.Init(bot))

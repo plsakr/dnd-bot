@@ -135,9 +135,9 @@ def format_spell(ctx, spell):
         out = ''
         if 'v' in components.keys():
             out += 'V, '
-        elif 's' in components.keys():
+        if 's' in components.keys():
             out += 'S, '
-        elif 'm' in components.keys():
+        if 'm' in components.keys():
             if isinstance(components['m'], str):
                 out += 'M ({0})'.format(components['m'])
             else:
