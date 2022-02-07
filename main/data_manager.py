@@ -8,6 +8,7 @@ BOT_TOKEN = ""
 GOOGLE_JSON_FILE = ""
 MONGO_CONNECTION = ""
 TEST_GUILD_ID = -1
+OWNER_ID = -1
 
 
 def init_global_data(is_test):
@@ -15,10 +16,12 @@ def init_global_data(is_test):
     global BOT_TOKEN
     global MONGO_CONNECTION
     global TEST_GUILD_ID
+    global OWNER_ID
 
     if not is_test:
         BOT_TOKEN = os.environ['BOT_TOKEN']
         MONGO_CONNECTION = os.environ['MONGO_CONNECTION']
+        OWNER_ID = os.environ['OWNER_ID']
     else:
         with open("SECRETS.txt") as data_file:
             data = json.load(data_file)
@@ -28,9 +31,11 @@ def init_global_data(is_test):
                 BOT_TOKEN = data['test_token']
             MONGO_CONNECTION = data['mongo_connection']
             TEST_GUILD_ID = data['guild_id']
-    db.init_db_connection(MONGO_CONNECTION)
+            OWNER_ID = data['owner_id']
+    mongo = db.init_db_connection(MONGO_CONNECTION)
     _init_monster_data()
     _init_spell_data()
+    return mongo
 
 
 def get_all_users():

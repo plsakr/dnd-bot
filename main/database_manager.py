@@ -26,6 +26,7 @@ def init_db_connection(db_connection_string):
     print(db_connection_string)
     client = MongoClient(db_connection_string)
     db = client.ddb_db
+    return db
 
 
 @measure_time

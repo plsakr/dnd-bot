@@ -1,7 +1,6 @@
-from types import SimpleNamespace
-
+import discord
 from discord.ext import commands
-from discord import channel, NotFound
+from discord import NotFound
 from discord.commands import Option
 
 from main.helpers.annotations import my_slash_command
@@ -12,7 +11,6 @@ from math import floor
 
 import main.character_manager as cm
 import main.data_manager as dm
-from main.command_groups import init
 
 
 def obj_to_dict(obj):
@@ -37,11 +35,12 @@ async def get_cached_combat(ctx):
     return dm.get_cached_combat(ctx.guild.id, ctx.channel.id)
 
 
-async def autocomplete_combatants(interaction, value):
-    combat = dm.get_cached_combat(interaction.guild_id, interaction.channel_id)
+async def autocomplete_combatants(ctx: discord.AutocompleteContext):
+    print(type(ctx.interaction))
+    combat = dm.get_cached_combat(ctx.interaction.guild_id, ctx.interaction.channel_id)
     if combat is None:
         return []
-    return [x.name for x in combat.players if x.name.lower().startswith(value.strip().lower())]
+    return [x.name for x in combat.players if x.name.lower().startswith(ctx.value.strip().lower())]
 
 
 class Init(commands.Cog):
@@ -101,6 +100,7 @@ class Init(commands.Cog):
             if status == cm.STATUS_ERR:
                 await ctx.respond("You haven't imported a character!", ephemeral=True)
             else:
+                # TODO: make sure this player is not already in this combat!
                 i = await roll_initiative(ctx, cha)
                 cbt = Combatant(cha['name'], i, True, ctx.author.mention, cha['HPMax'], cha['HP'])
                 combat.add_char(cbt)

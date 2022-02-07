@@ -3,21 +3,23 @@ import discord.ext.commands as commands
 
 from d20 import RollResult, AdvType
 from d20 import roll as d20_roll
-from discord import SlashCommand
+from discord import SlashCommand, ApplicationContext, DiscordException
+from discord.commands import permissions
+from main.helpers.mongo_handler import MongoHandler
 
 import main.character_manager as cm
 
 import main.data_manager as dm
 import sys
+import traceback
 
 if len(sys.argv) == 1:
-    dm.init_global_data(False)
+    mongo_db = dm.init_global_data(False)
 else:
-    dm.init_global_data(sys.argv[1])
+    mongo_db = dm.init_global_data(sys.argv[1])
 
 from main.database_manager import retrieve_guild_prefix, set_guild_prefix
 
-from main.initiative import Initiative
 import math
 
 from main.cogs import search, initiative, character
@@ -25,6 +27,9 @@ import logging
 from main.command_groups import init
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('discord')
+handler = MongoHandler(mongo_db, level=logging.DEBUG)
+logger.addHandler(handler)
 
 DEFAULT_PREFIX = '?'
 
@@ -37,13 +42,19 @@ class DnDBot(commands.Bot):
     def __init__(self, prefix, description=None, **options):
         super(DnDBot, self).__init__(prefix, description=description, activity=discord.Game(name='Backseat DM'),
                                      **options)
-        self.cached_combat = None  # type: Initiative
 
     def slash_command(self, **kwargs):
         if dm.TEST_GUILD_ID > 0:
             return self.application_command(cls=SlashCommand, guild_ids=[dm.TEST_GUILD_ID], **kwargs)
         else:
             return self.application_command(cls=SlashCommand, **kwargs)
+
+    async def on_application_command_error(self, context: ApplicationContext, exception: DiscordException) -> None:
+        print('Error encountered. Logging')
+        tb = traceback.format_exception(
+            type(exception), exception, exception.__traceback__
+        )
+        logger.error(f'Exception encountered in command {context.command} with message: {exception}.\nTraceback:{tb}')
 
 
 def get_command_prefix(msg):
@@ -52,7 +63,7 @@ def get_command_prefix(msg):
     return retrieve_guild_prefix(msg.guild.id, DEFAULT_PREFIX)
 
 
-bot = DnDBot(lambda _, msg: get_command_prefix(msg))
+bot = DnDBot(lambda _, msg: get_command_prefix(msg), owner_id=dm.OWNER_ID)
 cogs = ['main.cogs.initiative', 'main.cogs.character', 'main.cogs.search']
 
 bot.add_application_command(init)
@@ -63,9 +74,6 @@ bot.add_cog(character.Character(bot))
 
 @bot.event
 async def on_ready():
-    # for cog in cogs:
-    #     bot.load_extension(cog)
-    #     bot.a
     print('Logged on as {0}'.format(bot.user))
 
 
@@ -121,6 +129,12 @@ async def prefix(ctx, *args):
     else:
         set_guild_prefix(ctx.guild.id, args[0])
         await ctx.send('Current server prefix is now {0}'.format(retrieve_guild_prefix(ctx.guild.id, DEFAULT_PREFIX)))
+
+
+@bot.slash_command()
+@permissions.is_owner()
+async def crash_bot(ctx):
+    raise Exception("Test Exception!")
 
 
 print("Loading all saved data!")
