@@ -1,9 +1,9 @@
 import discord
 from discord.ext import commands
-from discord import NotFound
+from discord import NotFound, SlashCommandGroup
 from discord.commands import Option
 
-from main.helpers.annotations import my_slash_command
+from main.helpers.combat_helper import get_cached_combat, save_combat
 from main.initiative import Initiative, Combatant
 from d20 import roll as d20_roll
 from main.cogs.search import search
@@ -11,28 +11,6 @@ from math import floor
 
 import main.character_manager as cm
 import main.data_manager as dm
-
-
-def obj_to_dict(obj):
-    if type(obj) is dict:
-        res = {}
-        for k, v in obj.items():
-            res[k] = obj_to_dict(v)
-        return res
-    elif type(obj) is list:
-        return [obj_to_dict(item) for item in obj]
-    elif type(obj) in [Initiative, Combatant]:
-        return obj_to_dict(vars(obj))
-    else:
-        return obj
-
-async def save_combat(ctx, cbt):
-    combat_obj = obj_to_dict(cbt) if cbt is not None else None
-    dm.save_cached_combat(ctx.guild.id, ctx.channel.id, combat_obj)
-
-
-async def get_cached_combat(ctx):
-    return dm.get_cached_combat(ctx.guild.id, ctx.channel.id)
 
 
 async def autocomplete_combatants(ctx: discord.AutocompleteContext):
@@ -43,21 +21,26 @@ async def autocomplete_combatants(ctx: discord.AutocompleteContext):
     return [x.name for x in combat.players if x.name.lower().startswith(ctx.value.strip().lower())]
 
 
+async def autocomplete_npc_combatants(ctx: discord.AutocompleteContext):
+    combat = dm.get_cached_combat(ctx.interaction.guild_id, ctx.interaction.channel_id)
+    if combat is None:
+        return []
+    return [x.name for x in combat.players if x.name.lower().startswith(ctx.value.strip().lower()) and x.mention is None]
+
+
 class Init(commands.Cog):
     def __init__(self, bot):
         self.bot = bot  # type: DnDBot
 
-    @my_slash_command()
-    async def info(self, ctx):
-        """
-        """
-        # await ctx.send("Invalid usage!")
+    initiative = SlashCommandGroup("i", "Various commands for initiative!")
 
+    @initiative.command()
+    async def info(self, ctx):
         cbt = await get_cached_combat(ctx)
         if cbt is not None:
             await ctx.respond("This command is deprecated... Check the pinned messages for updated combat data!")
 
-    @my_slash_command()
+    @initiative.command()
     async def begin(self, ctx):
         if (await get_cached_combat(ctx)) is not None:
             await ctx.respond('Please end combat using `/end` first!', ephemeral=True)
@@ -73,7 +56,7 @@ class Init(commands.Cog):
             await save_combat(ctx, cached_combat)
             await message.pin()
 
-    @my_slash_command()
+    @initiative.command()
     async def end(self, ctx):
         combat = await get_cached_combat(ctx)
         if combat is None:
@@ -90,7 +73,7 @@ class Init(commands.Cog):
                 await save_combat(ctx, None)
                 await ctx.respond("Combat has ended. ~~Here's to the next TPK~~ :beers:")
 
-    @my_slash_command()
+    @initiative.command()
     async def join(self, ctx):
         combat = await get_cached_combat(ctx)
         if combat is None:
@@ -100,16 +83,18 @@ class Init(commands.Cog):
             if status == cm.STATUS_ERR:
                 await ctx.respond("You haven't imported a character!", ephemeral=True)
             else:
-                # TODO: make sure this player is not already in this combat!
-                i = await roll_initiative(ctx, cha)
-                cbt = Combatant(cha['name'], i, True, ctx.author.mention, cha['HPMax'], cha['HP'])
-                combat.add_char(cbt)
-                msg = await ctx.fetch_message(combat.cached_summary)
-                if msg is not None:
-                    await msg.edit(combat.get_full_text())
-                await save_combat(ctx, combat)
+                if not combat.check_char_exists(cha['name']):
+                    i = await roll_initiative(ctx, cha)
+                    cbt = Combatant(cha['name'], i, True, ctx.author.mention, cha['HPMax'], cha['HP'])
+                    combat.add_char(cbt)
+                    msg = await ctx.fetch_message(combat.cached_summary)
+                    if msg is not None:
+                        await msg.edit(combat.get_full_text())
+                    await save_combat(ctx, combat)
+                else:
+                    await ctx.respond("You already joined this combat!", ephemeral=True)
 
-    @my_slash_command()
+    @initiative.command()
     async def add(self, ctx, name: Option(str, "Name of combatant"),
                   init_bonus: Option(int, "Initiative bonus / value"),
                   set_init: Option(bool, "Set initiative directly?", required=False, default=False),
@@ -140,7 +125,7 @@ class Init(commands.Cog):
             else:
                 await ctx.respond('That name already exists in initiative! Please change the name and try again', ephemeral=True)
 
-    @my_slash_command()
+    @initiative.command()
     async def madd(self, ctx, name: Option(str, "Monster name"), custom_hp: Option(int, "Custom hp", required=False, default=0)):
         combat = await get_cached_combat(ctx)
         if combat is None:
@@ -179,7 +164,7 @@ class Init(commands.Cog):
 
                 await search('monster', name, ctx, on_monster_found, on_find_monster_i)
 
-    @my_slash_command()
+    @initiative.command()
     async def remove_combatant(self, ctx, name: Option(str, 'Name of combatant to remove',
                                                        autocomplete=autocomplete_combatants)):
         combat = await get_cached_combat(ctx)
@@ -207,8 +192,8 @@ class Init(commands.Cog):
                 except NotFound:
                     print('could not find message!')
 
-    @my_slash_command()
-    async def health(self, ctx, combatant: Option(str, "name of combatant", autocomplete=autocomplete_combatants),
+    @initiative.command()
+    async def health(self, ctx, combatant: Option(str, "name of combatant", autocomplete=autocomplete_npc_combatants),
                      modifier: Option(int, "health modifier")):
         combat = await get_cached_combat(ctx)
         if combat is None:
@@ -228,7 +213,7 @@ class Init(commands.Cog):
                     print('could not find message!')
                 await ctx.author.send(cbt.get_summary() + "Health: {}".format(cbt.current_hp))
 
-    @my_slash_command()
+    @initiative.command()
     async def next(self, ctx):
         combat = await get_cached_combat(ctx)
         if combat is None:
@@ -237,6 +222,7 @@ class Init(commands.Cog):
             if combat.dungeon_master != ctx.author.id:
                 await ctx.respond('Only the DM can use that command!', ephemeral=True)
             else:
+                await ctx.defer()
                 current = combat.next()
                 to_remove = []
 
@@ -270,6 +256,29 @@ class Init(commands.Cog):
 
                 await ctx.respond("{0}{1} its your turn in initiative!".format(
                     current.mention + " " if current.mention is not None else "", current.name))
+
+    @initiative.command()
+    async def edit_initiative(self, ctx,
+                              combatant: Option(str, "name of combatant", autocomplete=autocomplete_combatants),
+                              new_initiative: Option(int, "New Initiative Value")):
+        combat = await get_cached_combat(ctx)
+        if combat is None:
+            await ctx.respond('Combat has not started!', ephemeral=True)
+        else:
+            if combat.dungeon_master != ctx.author.id:
+                await ctx.respond('Only the DM can use that command!', ephemeral=True)
+            else:
+                await ctx.defer()
+                cbt = combat.get_combatant_from_name(combatant)
+                cbt.init = new_initiative
+                combat.sort_initiative()
+                await save_combat(ctx, combat)
+                try:
+                    message = await ctx.fetch_message(combat.cached_summary)
+                    await message.edit(combat.get_full_text())
+                except NotFound:
+                    print('could not find message!')
+                await ctx.respond('Initiative value edited successfully.', ephemeral=True)
 
 
 async def roll_initiative(ctx, cha=None, initBonus=None, private=False):

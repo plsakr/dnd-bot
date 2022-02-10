@@ -1,13 +1,12 @@
 from discord import NotFound
 from discord.ext import commands
-from discord.commands import slash_command, Option
+from discord.commands import Option
 import main.character_manager as cm
 import main.message_formatter as mf
 from d20 import AdvType
 
 from main.helpers.annotations import my_slash_command
-from main.initiative import Initiative, Combatant
-import main.data_manager as dm
+from main.helpers.combat_helper import get_cached_combat, save_combat
 
 SKILLS = [
     'acr',
@@ -30,27 +29,6 @@ SKILLS = [
     'sur'
 ]
 MAIN_CHECKS = ['str', 'dex', 'con', 'int', 'wis', 'char']
-
-def obj_to_dict(obj):
-    if type(obj) is dict:
-        res = {}
-        for k, v in obj.items():
-            res[k] = obj_to_dict(v)
-        return res
-    elif type(obj) is list:
-        return [obj_to_dict(item) for item in obj]
-    elif type(obj) in [Initiative, Combatant]:
-        return obj_to_dict(vars(obj))
-    else:
-        return obj
-
-async def save_combat(ctx, cbt):
-    combat_obj = obj_to_dict(cbt) if cbt is not None else None
-    dm.save_cached_combat(ctx.guild.id, ctx.channel.id, combat_obj)
-
-
-async def get_cached_combat(ctx):
-    return dm.get_cached_combat(ctx.guild.id, ctx.channel.id)
 
 
 class Character(commands.Cog):
@@ -180,6 +158,7 @@ class Character(commands.Cog):
                 if combat is None:
                     await ctx.respond('{0}: {1}/{2}'.format(cha['name'], cha['HP'], cha['HPMax']))
                 else:
+                    # TODO: refactor this because it is the same thing as the /health command in the init.
                     cbt = combat.get_combatant_from_name(cha['name'])
                     cbt.modify_health(modifier)
                     await ctx.respond(cbt.get_summary())

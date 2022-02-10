@@ -24,7 +24,6 @@ import math
 
 from main.cogs import search, initiative, character
 import logging
-from main.command_groups import init
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('discord')
@@ -63,10 +62,9 @@ def get_command_prefix(msg):
     return retrieve_guild_prefix(msg.guild.id, DEFAULT_PREFIX)
 
 
-bot = DnDBot(lambda _, msg: get_command_prefix(msg), owner_id=dm.OWNER_ID)
-cogs = ['main.cogs.initiative', 'main.cogs.character', 'main.cogs.search']
+bot = DnDBot(lambda _, msg: get_command_prefix(msg), owner_id=dm.OWNER_ID,
+             debug_guilds=([dm.TEST_GUILD_ID] if dm.TEST_GUILD_ID != -1 else None))
 
-bot.add_application_command(init)
 bot.add_cog(search.Search(bot))
 bot.add_cog(initiative.Init(bot))
 bot.add_cog(character.Character(bot))
