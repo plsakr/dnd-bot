@@ -36,6 +36,7 @@ class Init(commands.Cog):
 
     @initiative.command()
     async def info(self, ctx):
+        """Prints the status of the current combat."""
         cbt = await get_cached_combat(ctx)
         if cbt is not None:
             await ctx.respond("_Note: The following data will not be updated._\n" + cbt.get_full_text(), ephemeral=True)
@@ -44,6 +45,7 @@ class Init(commands.Cog):
 
     @initiative.command()
     async def begin(self, ctx):
+        """Begin a new combat in this channel."""
         if (await get_cached_combat(ctx)) is not None:
             await ctx.respond('Please end combat using `/i end` first!', ephemeral=True)
         else:  # STARTING COMBAT
@@ -60,6 +62,7 @@ class Init(commands.Cog):
 
     @initiative.command()
     async def end(self, ctx):
+        """End the currently active combat."""
         combat = await get_cached_combat(ctx)
         if combat is None:
             await ctx.respond('Combat has not started!', ephemeral=True)
@@ -77,6 +80,7 @@ class Init(commands.Cog):
 
     @initiative.command()
     async def join(self, ctx):
+        """Join the active combat with your currently selected character."""
         combat = await get_cached_combat(ctx)
         if combat is None:
             await ctx.respond('Combat has not started!', ephemeral=True)
@@ -101,6 +105,7 @@ class Init(commands.Cog):
                   init_bonus: Option(int, "Initiative bonus / value"),
                   set_init: Option(bool, "Set initiative directly?", required=False, default=False),
                   hp: Option(int, "Combatant HP", required=False, default=0)):
+        """Add a custom combatant to the initiative."""
         combat = await get_cached_combat(ctx)
         if combat is None:
             await ctx.send('Combat has not started!', ephemeral=True)
@@ -129,6 +134,7 @@ class Init(commands.Cog):
 
     @initiative.command()
     async def madd(self, ctx, name: Option(str, "Monster name"), custom_hp: Option(int, "Custom hp", required=False, default=0)):
+        """Add a monster using its stats to the initiative."""
         combat = await get_cached_combat(ctx)
         if combat is None:
             await ctx.respond('Combat has not started!', ephemeral=True)
@@ -169,6 +175,7 @@ class Init(commands.Cog):
     @initiative.command()
     async def remove_combatant(self, ctx, name: Option(str, 'Name of combatant to remove',
                                                        autocomplete=autocomplete_combatants)):
+        """Remove a combatant from initiative."""
         combat = await get_cached_combat(ctx)
         if combat is None:
             await ctx.respond('Combat has not started!', ephemeral=True)
@@ -195,8 +202,9 @@ class Init(commands.Cog):
                     print('could not find message!')
 
     @initiative.command()
-    async def health(self, ctx, combatant: Option(str, "name of combatant", autocomplete=autocomplete_npc_combatants),
+    async def hp(self, ctx, combatant: Option(str, "name of combatant", autocomplete=autocomplete_npc_combatants),
                      modifier: Option(int, "health modifier")):
+        """Edit a combatant's hp (non-character)"""
         combat = await get_cached_combat(ctx)
         if combat is None:
             await ctx.respond('Combat has not started!', ephemeral=True)
@@ -217,6 +225,7 @@ class Init(commands.Cog):
 
     @initiative.command()
     async def next(self, ctx):
+        """Begin combat or move to the next combatant in initiative."""
         combat = await get_cached_combat(ctx)
         if combat is None:
             await ctx.respond('Combat has not started!', ephemeral=True)
@@ -263,6 +272,7 @@ class Init(commands.Cog):
     async def edit_initiative(self, ctx,
                               combatant: Option(str, "name of combatant", autocomplete=autocomplete_combatants),
                               new_initiative: Option(int, "New Initiative Value")):
+        """Edit a combatant's initiative value"""
         combat = await get_cached_combat(ctx)
         if combat is None:
             await ctx.respond('Combat has not started!', ephemeral=True)
