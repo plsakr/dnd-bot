@@ -38,12 +38,14 @@ class Init(commands.Cog):
     async def info(self, ctx):
         cbt = await get_cached_combat(ctx)
         if cbt is not None:
-            await ctx.respond("This command is deprecated... Check the pinned messages for updated combat data!")
+            await ctx.respond("_Note: The following data will not be updated._\n" + cbt.get_full_text(), ephemeral=True)
+        else:
+            await ctx.respond("Combat has not started yet", ephemeral=True)
 
     @initiative.command()
     async def begin(self, ctx):
         if (await get_cached_combat(ctx)) is not None:
-            await ctx.respond('Please end combat using `/end` first!', ephemeral=True)
+            await ctx.respond('Please end combat using `/i end` first!', ephemeral=True)
         else:  # STARTING COMBAT
             print('Oh boy starting combat!!')
             cached_combat = Initiative()
