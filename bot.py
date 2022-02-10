@@ -35,7 +35,8 @@ DEFAULT_PREFIX = '?'
 
 class DnDBot(commands.Bot):
     """
-    My custom discord bot subclass
+    My custom discord bot subclass. Note that prefix no longer is used by any current commands, however
+    it will remain in the code for any possible future needs.
     """
 
     def __init__(self, prefix, description=None, **options):

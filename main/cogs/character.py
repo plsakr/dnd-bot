@@ -1,11 +1,10 @@
-from discord import NotFound
+from discord import NotFound, SlashCommandGroup, slash_command, Attachment
 from discord.ext import commands
 from discord.commands import Option
 import main.character_manager as cm
 import main.message_formatter as mf
 from d20 import AdvType
 
-from main.helpers.annotations import my_slash_command
 from main.helpers.combat_helper import get_cached_combat, save_combat
 
 SKILLS = [
@@ -34,6 +33,8 @@ MAIN_CHECKS = ['str', 'dex', 'con', 'int', 'wis', 'char']
 class Character(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        
+    chars = SlashCommandGroup("ch", "Various commands for character management!")
 
     @staticmethod
     async def send_result(status, result, ctx):
@@ -47,23 +48,27 @@ class Character(commands.Cog):
         elif status == cm.STATUS_INVALID_INPUT:
             await ctx.respond('Not a valid check!')
 
-    @commands.command()
-    async def chimport(self, ctx):
-        if hasattr(ctx.message, 'attachments') and len(ctx.message.attachments) == 1:
-            await ctx.send("Importing character. Please wait")
-            xml_bytes = await ctx.message.attachments[0].read()
-            data = cm.create_from_xml(xml_bytes)
-            status = cm.import_from_object(data, ctx.author.id)
-            if status == cm.STATUS_OK:
-                _, char = cm.get_active_char(ctx.author.id)
-                await ctx.send('Imported ' + char['name'])
-            elif status == cm.STATUS_ERR:
-                await ctx.send('There was an error while importing the character. Check logs!')
-        else:
-            await ctx.send('You need to upload your character file')
+    @slash_command()
+    async def chimport(self, ctx,  attachment: Option(
+        Attachment,
+        "Character data file to import (.xfdf)",
+        required=True,
+    ),):
+        """Import a new character, or update an existing one."""
+        await ctx.defer(ephemeral=True)
+        xml_bytes = await attachment.read()
+        data = cm.create_from_xml(xml_bytes)
+        status = cm.import_from_object(data, ctx.author.id)
+        if status == cm.STATUS_OK:
+            _, char = cm.get_active_char(ctx.author.id)
+            await ctx.respond('Imported ' + char['name'], ephemeral=True)
+        elif status == cm.STATUS_ERR:
+            await ctx.respond('There was an error while importing the character. Check logs!', ephemeral=True)
 
-    @my_slash_command()
-    async def chars(self, ctx):
+
+    @chars.command()
+    async def list(self, ctx):
+        """List all of your imported characters."""
         status, active_char = cm.get_active_char(ctx.author.id)
         if status == cm.STATUS_ERR:
             await ctx.respond("Could not retrieve your characters. Have you imported any yet?", ephemeral=True)
@@ -72,8 +77,9 @@ class Character(commands.Cog):
         msg_text = mf.format_characters(characters, ctx.author, active_char['_id'])
         await ctx.respond(msg_text, ephemeral=True)
 
-    @my_slash_command()
+    @chars.command()
     async def switch(self, ctx):
+        """Switch your active character."""
         characters = cm.get_player_characters_list(ctx.author.id)
         if len(characters) < 2:
             await ctx.respond("You have less than 2 imported characters. Use `/chars` to list your characters")
@@ -91,8 +97,9 @@ class Character(commands.Cog):
         await ctx.respond(content="Choose a new character from the dropdown below:",
                           view=mf.DropdownView(char_names, on_reply), ephemeral=True)
 
-    @my_slash_command()
+    @chars.command(name="del")
     async def del_char(self, ctx):
+        """Delete a character's data permanently."""
         characters = cm.get_player_characters_list(ctx.author.id)
         if len(characters) < 2:
             await ctx.respond("You have less than 2 imported characters. You cannot delete your last character!", ephemeral=True)
@@ -114,11 +121,12 @@ class Character(commands.Cog):
         await ctx.respond(content="Choose a character to delete from below. *Note that this cannot be undone*",
                           view=mf.DropdownView(char_names, on_reply), ephemeral=True)
 
-    @my_slash_command()
+    @slash_command()
     async def check(self,
                     ctx,
                     attribute: Option(str, "Choose a check", choices=MAIN_CHECKS + SKILLS),
                     advantage: Option(str, "Advantage status", required=False, choices=["None", "Advantage", "Disadvantage"], default="None")):
+        """Roll a skill check using your active character's bonuses."""
         adv = AdvType.NONE
 
         if advantage == 'Advantage':
@@ -129,10 +137,11 @@ class Character(commands.Cog):
         status, result = cm.roll_check(ctx.author.id, attribute, adv)
         await self.send_result(status, result, ctx)
 
-    @my_slash_command()
+    @slash_command()
     async def save(self, ctx,
                    attribute: Option(str, "Choose a save", choices=MAIN_CHECKS),
                    advantage: Option(str, "Advantage status", required=False, choices=["None", "Advantage", "Disadvantage"], default="None")):
+        """Roll a saving throw using your active character's bonuses."""
         adv = AdvType.NONE
 
         if advantage == 'Advantage':
@@ -143,8 +152,9 @@ class Character(commands.Cog):
         status, result = cm.roll_save(ctx.author.id, attribute, adv)
         await self.send_result(status, result, ctx)
 
-    @my_slash_command()
+    @slash_command()
     async def hp(self, ctx, modifier: Option(int, "HP Modifier", required=False, default=0)):
+        """Check or modify the hit points of your active character."""
         status, cha = cm.get_active_char(ctx.author.id)
         if status == cm.STATUS_ERR:
             ctx.respond("Please import a character first. mK? thanks!")
