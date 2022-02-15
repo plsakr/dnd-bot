@@ -30,6 +30,8 @@ logger = logging.getLogger('discord')
 handler = MongoHandler(mongo_db, level=logging.DEBUG)
 logger.addHandler(handler)
 
+logger.info(f'Owner ID: {dm.OWNER_ID}, type: {type(dm.OWNER_ID)}')
+
 DEFAULT_PREFIX = '?'
 
 
