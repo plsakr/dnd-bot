@@ -21,7 +21,7 @@ def init_global_data(is_test):
     if not is_test:
         BOT_TOKEN = os.environ['BOT_TOKEN']
         MONGO_CONNECTION = os.environ['MONGO_CONNECTION']
-        OWNER_ID = os.environ['OWNER_ID']
+        OWNER_ID = int(os.environ['OWNER_ID'])
     else:
         with open("SECRETS.txt") as data_file:
             data = json.load(data_file)
