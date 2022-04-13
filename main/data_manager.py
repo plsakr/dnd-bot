@@ -1,12 +1,14 @@
 import main.database_manager as db
 import json
 import os
+from urllib.parse import urlparse
 
 from main.initiative import Initiative
 
 BOT_TOKEN = ""
 GOOGLE_JSON_FILE = ""
 MONGO_CONNECTION = ""
+REDIS_HOST = None
 TEST_GUILD_ID = -1
 OWNER_ID = -1
 
@@ -15,6 +17,7 @@ def init_global_data(is_test):
     print('beginning data initialization')
     global BOT_TOKEN
     global MONGO_CONNECTION
+    global REDIS_HOST
     global TEST_GUILD_ID
     global OWNER_ID
 
@@ -22,6 +25,7 @@ def init_global_data(is_test):
         BOT_TOKEN = os.environ['BOT_TOKEN']
         MONGO_CONNECTION = os.environ['MONGO_CONNECTION']
         OWNER_ID = int(os.environ['OWNER_ID'])
+        REDIS_HOST = urlparse(os.environ.get('REDISCLOUD_URL'))
     else:
         with open("SECRETS.txt") as data_file:
             data = json.load(data_file)
@@ -32,7 +36,8 @@ def init_global_data(is_test):
             MONGO_CONNECTION = data['mongo_connection']
             TEST_GUILD_ID = data['guild_id']
             OWNER_ID = data['owner_id']
-    mongo = db.init_db_connection(MONGO_CONNECTION)
+            REDIS_HOST = urlparse(data['redis_url'])
+    mongo = db.init_db_connection(MONGO_CONNECTION, REDIS_HOST)
     _init_monster_data()
     _init_spell_data()
     return mongo

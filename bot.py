@@ -46,10 +46,11 @@ class DnDBot(commands.Bot):
                                      **options)
 
     def slash_command(self, **kwargs):
-        if dm.TEST_GUILD_ID > 0:
-            return self.application_command(cls=SlashCommand, guild_ids=[dm.TEST_GUILD_ID], **kwargs)
-        else:
-            return self.application_command(cls=SlashCommand, **kwargs)
+        # if dm.TEST_GUILD_ID > 0:
+        #     return self.application_command(cls=SlashCommand, guild_ids=[dm.TEST_GUILD_ID], **kwargs)
+        # else:
+        logger.info("Command Executed.")
+        return self.application_command(cls=SlashCommand, **kwargs)
 
     async def on_application_command_error(self, context: ApplicationContext, exception: DiscordException) -> None:
         print('Error encountered. Logging')
@@ -141,3 +142,4 @@ async def crash_bot(ctx):
 print("Loading all saved data!")
 cm.load_data()
 bot.run(dm.BOT_TOKEN)
+print(bot)

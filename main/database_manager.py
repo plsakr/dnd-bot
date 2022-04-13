@@ -1,6 +1,8 @@
 from pymongo import MongoClient, collection, ASCENDING, UpdateOne
 from bson.son import SON
+from bson.json_util import dumps, loads
 import time
+import redis
 
 
 def measure_time(f):
@@ -18,24 +20,50 @@ def measure_time(f):
 
 client = MongoClient()
 db = client.ddb_db
+r: redis.Redis = None
 
 
-def init_db_connection(db_connection_string):
+def init_db_connection(db_connection_string, redis_connection):
     global client
     global db
-    print(db_connection_string)
+    global r
     client = MongoClient(db_connection_string)
     db = client.ddb_db
+    r = redis.Redis(host=redis_connection.hostname, port=redis_connection.port, password=redis_connection.password)
+    print(r.set("connected", "yes"))
+    print("connected to databases")
     return db
+
+
+def retrieve_from_redis(key):
+    global r
+    result = r.get(str(key))
+    return loads(result) if result is not None else None
+
+
+def add_to_cache(key, value):
+    global r
+    r.set(str(key), dumps(value))
+
+
+def remove_from_cache(key):
+    global r
+    r.delete(key)
 
 
 @measure_time
 def retrieve_or_create_user(user_id):
+    cache_test = retrieve_from_redis(user_id)
+    if cache_test is not None and cache_test != {}:
+        return cache_test
+
     global db
     users = db.users
     retrieved = users.find_one({"_id": user_id})
     if retrieved == None:
         retrieved = {"_id": user_id, "chars": [], "active_char": ""}
+
+    add_to_cache(user_id, retrieved)
     return retrieved
 
 
@@ -51,13 +79,20 @@ def upsert_user(user):
     global db
     users = db.users
     users.replace_one({"_id": user["_id"]}, user, upsert=True)
+    add_to_cache(user['_id'], user)
 
 
 @measure_time
 def retrieve_char(char_id):
+    cache_test = retrieve_from_redis(char_id)
+    if cache_test is not None and cache_test != {}:
+        return cache_test
+
     global db
     chars = db.chars
-    return chars.find_one({"_id": char_id})
+    retrieved = chars.find_one({"_id": char_id})
+    add_to_cache(char_id, retrieved)
+    return retrieved
 
 
 @measure_time
@@ -65,6 +100,7 @@ def upsert_character(character):
     global db
     chars = db.chars
     chars.replace_one({"_id": character["_id"]}, character, upsert=True)
+    add_to_cache(character['_id'], character)
 
 
 @measure_time
@@ -79,6 +115,7 @@ def delete_character(character_id):
     global db
     chars: collection = db.chars
     chars.delete_one({'_id': character_id})
+    remove_from_cache(character_id)
 
 
 @measure_time
@@ -97,9 +134,15 @@ def add_spell(spell):
 
 @measure_time
 def retrieve_spell(name):
+    cache_test = retrieve_from_redis(name)
+    if cache_test is not None and cache_test != {}:
+        return cache_test
+
     global db
     spells = db.spells
-    return spells.find_one({"_id": name})
+    retrieved = spells.find_one({"_id": name})
+    add_to_cache(name, retrieved)
+    return retrieved
 
 
 @measure_time
@@ -178,25 +221,47 @@ def retrieve_monster(name):
 
 @measure_time
 def retrieve_monster_id(bId):
+    cache_test = retrieve_from_redis(bId)
+    if cache_test is not None and cache_test != {}:
+        return cache_test
+
     global db
     monsters = db.monsters
-    return monsters.find_one({"_id": bId})
+    retrieved = monsters.find_one({"_id": bId})
+    add_to_cache(bId, retrieved)
+    return retrieved
 
 
 @measure_time
 def retrieve_spell_id(bId):
+    cache_test = retrieve_from_redis(bId)
+    if cache_test is not None and cache_test != {}:
+        return cache_test
+
     global db
     monsters = db.spells
-    return monsters.find_one({"_id": bId})
+    retrieved = monsters.find_one({"_id": bId})
+    add_to_cache(bId, retrieved)
+    return retrieved
 
 
 def retrieve_monster_name(bId):
+    cache_test = retrieve_from_redis(bId)
+    if cache_test is not None and cache_test != {}:
+        print(cache_test)
+        return cache_test['name']
+
     global db
     monsters = db.monsters
     return monsters.find_one({"_id": bId}, {'name': 1})['name']
 
 
 def retrieve_spell_name(bId):
+    cache_test = retrieve_from_redis(bId)
+    if cache_test is not None and cache_test != {}:
+        print(cache_test)
+        return cache_test['name']
+
     global db
     spells = db.spells
     return spells.find_one({"_id": bId}, {'name': 1})['name']
