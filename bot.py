@@ -46,6 +46,7 @@ class DnDBot(commands.Bot):
                                      **options)
 
     def slash_command(self, **kwargs):
+        logger.info("Command executed.")
         if dm.TEST_GUILD_ID > 0:
             return self.application_command(cls=SlashCommand, guild_ids=[dm.TEST_GUILD_ID], **kwargs)
         else:
