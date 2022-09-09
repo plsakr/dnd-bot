@@ -4,7 +4,6 @@ import discord.ext.commands as commands
 from d20 import RollResult, AdvType
 from d20 import roll as d20_roll
 from discord import SlashCommand, ApplicationContext, DiscordException
-from discord.commands import permissions
 from main.helpers.mongo_handler import MongoHandler
 
 import main.character_manager as cm
@@ -134,7 +133,7 @@ async def prefix(ctx, *args):
 
 
 @bot.slash_command()
-@permissions.is_owner()
+@commands.is_owner()
 async def crash_bot(ctx):
     raise Exception("Test Exception!")
 

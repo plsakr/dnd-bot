@@ -9,7 +9,7 @@ class MongoHandler(logging.Handler):
         logging.Handler.__init__(self, level)
         self.database = mongo_db
 
-        if collection in self.database.collection_names():
+        if collection in self.database.list_collection_names():
             if drop:
                 self.database.drop_collection(collection)
                 self.collection = self.database.create_collection(name=collection, capped=capped, size=size)
@@ -19,7 +19,7 @@ class MongoHandler(logging.Handler):
             self.collection = self.database.create_collection(name=collection, capped=capped, size=size)
 
     def emit(self, record):
-        self.collection.save({'when': datetime.datetime.now(),
+        self.collection.insert_one({'when': datetime.datetime.now(),
                               'levelno': record.levelno,
                               'levelname': record.levelname,
                               'message': record.msg})
