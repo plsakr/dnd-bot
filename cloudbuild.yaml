@@ -5,6 +5,6 @@ steps:
   - '-c'
   - |
     set -x && \
-    gcloud compute ssh --zone "us-east1-b" "kevin-instance1"  --project "dndbot-362000" --command='/bin/sh /home/peter_l_sakr/pull.sh'
+    gcloud compute ssh --zone "us-east1-b" "peter_l_sakr@kevin-instance1"  --project "dndbot-362000" --command='/bin/sh /home/peter_l_sakr/pull.sh'
 options:
   logging: CLOUD_LOGGING_ONLY
