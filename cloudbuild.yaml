@@ -1,0 +1,8 @@
+steps:
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  entrypoint: /bin/sh
+  args: 
+  - '-c'
+  - |
+    set -x && \
+    gcloud compute ssh --zone "us-east1-b" "kevin-instance1"  --project "dndbot-362000" --command='/bin/sh /home/peter_l_sakr/pull.sh'
