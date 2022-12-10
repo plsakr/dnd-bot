@@ -152,21 +152,21 @@ def insert_many_spells(spell_objs, spell_grams):
 def does_monster_exist(name):
     global db
     monsters = db.monsters
-    return monsters.find({'name': name}).limit(1).count() == 1
+    return monsters.count_documents({'name': name}) == 1
 
 
 @measure_time
 def does_monster_exist_id(bid):
     global db
     monsters = db.monsters
-    return monsters.find({'_id': bid}).limit(1).count() == 1
+    return monsters.count_documents({'_id': bid}) == 1
 
 
 @measure_time
 def does_spell_exist_id(bid):
     global db
     spells = db.spells
-    return spells.find({'_id': bid}).limit(1).count() == 1
+    return spells.count_documents({'_id': bid}) == 1
 
 
 @measure_time
