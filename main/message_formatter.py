@@ -76,7 +76,7 @@ def reformat_dice(inString):
             current = current[0:start:] + value.split('|')[-1] + current[end::]
         elif command == '@dc':
             current = current[0:start:] + '**' + value.split(' ')[1] + '**' + current[end::]
-        elif command == '@condition':
+        elif command == '@condition' or command == '@action':
             current = current[0:start:] + '_' + value.split(' ')[1] + '_' + current[end::]
         elif command == '@spell':
             current = current[0:start:] + '**' + value.split(' ', 1)[1] + '**' + current[end::]
@@ -166,8 +166,12 @@ def format_spell(ctx, spell):
         for entry in entries:
             if isinstance(entry, str):
                 out += reformat_dice(entry) + '\n'
-            else:
+            elif 'name' in entry:
                 out += '**' + entry['name'] + '** ' + format_spell_entries(entry["entries"])
+            elif 'type' in entry and entry['type'] == 'list':
+                out += '\n'
+                for listEntry in entry['items']:
+                    out += '\u2022 ' + reformat_dice(listEntry) + '\n'
         return out
 
     embed = []
